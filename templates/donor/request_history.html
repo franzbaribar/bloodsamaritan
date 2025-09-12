@@ -1,0 +1,797 @@
+{% extends 'donor/donorbase.html' %}
+{% block content %}
+{% load widget_tweaks %}
+{%load static%}
+<head>
+    <style>
+        .blood-requests-wrapper {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .background-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        
+        .floating-element {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.08);
+            font-size: 3rem;
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        .floating-element:nth-child(1) { top: 15%; left: 8%; animation-delay: 0s; }
+        .floating-element:nth-child(2) { top: 35%; right: 12%; animation-delay: 3s; }
+        .floating-element:nth-child(3) { top: 65%; left: 15%; animation-delay: 6s; }
+        .floating-element:nth-child(4) { top: 85%; right: 20%; animation-delay: 2s; }
+        .floating-element:nth-child(5) { top: 25%; left: 50%; animation-delay: 4s; }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            50% { transform: translateY(-30px) rotate(10deg); opacity: 0.6; }
+        }
+        
+        .requests-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .page-title {
+            color: white;
+            font-size: 3.2rem;
+            font-weight: 800;
+            margin: 0;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+            position: relative;
+        }
+        
+        .page-subtitle {
+            color: rgba(255,255,255,0.95);
+            font-size: 1.3rem;
+            margin-top: 0.8rem;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+        
+        .header-icon {
+            font-size: 4rem;
+            color: white;
+            margin-bottom: 1.5rem;
+            animation: emergency-pulse 2s ease-in-out infinite;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+        }
+        
+        @keyframes emergency-pulse {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.15); filter: brightness(1.4); }
+        }
+        
+        .stats-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+        }
+        
+        .stat-card:hover::before {
+            left: 100%;
+        }
+        
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+        
+        .stat-number {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .stat-label {
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+        
+        .stat-urgent {
+            color: #dc3545;
+        }
+        
+        .stat-approved {
+            color: #28a745;
+        }
+        
+        .stat-pending {
+            color: #ffc107;
+        }
+        
+        .stat-total {
+            color: #6f42c1;
+        }
+        
+        .requests-table-container {
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .table-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            padding: 2rem;
+            border-bottom: 4px solid #dc3545;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .table-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+            opacity: 0.3;
+        }
+        
+        .table-title {
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+        }
+        
+        .modern-requests-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            background: white;
+        }
+        
+        .modern-requests-table thead {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+        }
+        
+        .modern-requests-table thead th {
+            padding: 1.5rem 1.2rem;
+            color: #ecf0f1;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
+            border: none;
+            position: relative;
+            white-space: nowrap;
+        }
+        
+        .modern-requests-table thead th::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #dc3545, transparent);
+        }
+        
+        .modern-requests-table tbody tr {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #f8f9fa;
+            position: relative;
+        }
+        
+        .modern-requests-table tbody tr:hover {
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.08) 0%, rgba(200, 35, 51, 0.08) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .modern-requests-table tbody tr:hover::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        
+        .modern-requests-table tbody td {
+            padding: 1.5rem 1.2rem;
+            color: #2c3e50;
+            font-weight: 500;
+            vertical-align: middle;
+            border: none;
+            position: relative;
+        }
+        
+        .modern-requests-table tbody tr:last-child {
+            border-bottom: none;
+        }
+        
+        .patient-name {
+            font-weight: 700;
+            color: #2c3e50;
+            font-size: 1.05rem;
+        }
+        
+        .patient-age {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .patient-age::after {
+            content: ' years old';
+            font-weight: 400;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        .reason-cell {
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #495057;
+            cursor: help;
+        }
+        
+        .reason-cell[title] {
+            position: relative;
+        }
+        
+        .blood-group-urgent {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 0.6rem 1rem;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 1rem;
+            display: inline-block;
+            min-width: 50px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        .unit-urgent {
+            color: #dc3545;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .unit-urgent::after {
+            content: ' ml';
+            color: #6c757d;
+            font-weight: 400;
+            font-size: 0.9em;
+        }
+        
+        .date-display {
+            color: #495057;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.7rem 1.4rem;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            min-width: 100px;
+            justify-content: center;
+        }
+        
+        .status-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+        }
+        
+        .status-approved {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .status-rejected {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+        
+        .status-pending {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: #212529;
+            animation: pulse-pending 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-pending {
+            0%, 100% { transform: scale(1); box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 6px 20px rgba(255, 193, 7, 0.5); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 5rem 2rem;
+            color: #6c757d;
+        }
+        
+        .empty-state-icon {
+            font-size: 5rem;
+            margin-bottom: 2rem;
+            opacity: 0.5;
+            display: block;
+        }
+        
+        .empty-state-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #495057;
+        }
+        
+        .empty-state-desc {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .urgent-indicator {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            animation: blink 1s ease-in-out infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 992px) {
+            .stats-dashboard {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+            }
+            
+            .stat-card {
+                padding: 1.5rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .blood-requests-wrapper {
+                padding: 1rem 0;
+            }
+            
+            .page-title {
+                font-size: 2.5rem;
+            }
+            
+            .header-icon {
+                font-size: 3rem;
+            }
+            
+            .stats-dashboard {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .stat-number {
+                font-size: 2.2rem;
+            }
+            
+            .requests-table-container {
+                margin: 1rem;
+                border-radius: 20px;
+            }
+            
+            .table-header {
+                padding: 1.5rem;
+            }
+            
+            .table-title {
+                font-size: 1.4rem;
+            }
+            
+            .modern-requests-table {
+                font-size: 0.85rem;
+            }
+            
+            .modern-requests-table thead th,
+            .modern-requests-table tbody td {
+                padding: 1rem 0.8rem;
+            }
+            
+            .reason-cell {
+                max-width: 150px;
+            }
+            
+            .status-badge {
+                padding: 0.5rem 1rem;
+                font-size: 0.75rem;
+                min-width: 80px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .table-responsive {
+                font-size: 0.8rem;
+            }
+            
+            .reason-cell {
+                max-width: 100px;
+            }
+            
+            .modern-requests-table thead th,
+            .modern-requests-table tbody td {
+                padding: 0.8rem 0.5rem;
+            }
+        }
+    </style>
+</head>
+
+<div class="blood-requests-wrapper">
+    <div class="background-elements">
+        <div class="floating-element">🚨</div>
+        <div class="floating-element">🏥</div>
+        <div class="floating-element">🚑</div>
+        <div class="floating-element">⚕️</div>
+        <div class="floating-element">🩸</div>
+    </div>
+    
+    <div class="requests-container">
+        <div class="page-header">
+            <div class="header-icon">📋</div>
+            <h1 class="page-title">My Blood Requests</h1>
+            <p class="page-subtitle">Track your emergency blood requests and their status.<br>All requests are prioritized for immediate medical attention.</p>
+        </div>
+        
+        <div class="stats-dashboard">
+            <div class="stat-card">
+                <span class="stat-icon stat-total">📊</span>
+                <span class="stat-number stat-total">{{ blood_request|length }}</span>
+                <div class="stat-label">Total Requests</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon stat-approved">✅</span>
+                <span class="stat-number stat-approved" data-stat="approved">0</span>
+                <div class="stat-label">Approved</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon stat-pending">⏳</span>
+                <span class="stat-number stat-pending" data-stat="pending">0</span>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon stat-urgent">🚨</span>
+                <span class="stat-number stat-urgent" data-stat="units">0</span>
+                <div class="stat-label">Units Requested</div>
+            </div>
+        </div>
+        
+        <div class="requests-table-container">
+            <div class="table-header">
+                <h2 class="table-title">
+                    <span>🩸</span>
+                    Emergency Request Records
+                </h2>
+            </div>
+            
+            <div class="table-responsive">
+                {% if blood_request %}
+                <table class="modern-requests-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Patient Name</th>
+                            <th scope="col">Age</th>
+                            <th scope="col">Medical Reason</th>
+                            <th scope="col">Blood Type</th>
+                            <th scope="col">Units</th>
+                            <th scope="col">Request Date</th>
+                            <th scope="col">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in blood_request %}
+                        <tr>
+                            <td>
+                                <div class="patient-name">{{ t.patient_name }}</div>
+                            </td>
+                            <td>
+                                <span class="patient-age">{{ t.patient_age }}</span>
+                            </td>
+                            <td>
+                                <span class="reason-cell" 
+                                      {% if t.reason|length > 30 %}title="{{ t.reason }}"{% endif %}>
+                                    {{ t.reason|truncatechars:35 }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="blood-group-urgent">{{ t.bloodgroup }}</span>
+                            </td>
+                            <td>
+                                <span class="unit-urgent">{{ t.unit }}</span>
+                            </td>
+                            <td>
+                                <span class="date-display">{{ t.date|date:"M d, Y" }}</span>
+                            </td>
+                            <td>
+                                {% if t.status == 'Approved' %}
+                                    <span class="status-badge status-approved">
+                                        <span>✓</span>
+                                        Approved
+                                    </span>
+                                {% elif t.status == 'Rejected' %}
+                                    <span class="status-badge status-rejected">
+                                        <span>✕</span>
+                                        Rejected
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-pending">
+                                        <span>⏳</span>
+                                        Pending
+                                        <div class="urgent-indicator">!</div>
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">
+                    <span class="empty-state-icon">🩸</span>
+                    <div class="empty-state-title">No Blood Requests Yet</div>
+                    <div class="empty-state-desc">
+                        You haven't made any blood requests yet.<br>
+                        In case of emergency, use our quick request system to get immediate help from our donor network.
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calculate and display statistics
+    let approvedCount = 0;
+    let pendingCount = 0;
+    let totalUnits = 0;
+    
+    const tableRows = document.querySelectorAll('.modern-requests-table tbody tr');
+    
+    tableRows.forEach(row => {
+        const statusElement = row.querySelector('.status-badge');
+        const unitElement = row.querySelector('.unit-urgent');
+        
+        if (statusElement && unitElement) {
+            const statusText = statusElement.textContent.trim();
+            const unitValue = parseInt(unitElement.textContent) || 0;
+            
+            if (statusText.includes('Approved')) {
+                approvedCount++;
+            } else if (statusText.includes('Pending')) {
+                pendingCount++;
+            }
+            
+            totalUnits += unitValue;
+        }
+    });
+    
+    // Update stat cards
+    const statElements = document.querySelectorAll('[data-stat]');
+    statElements.forEach(element => {
+        const statType = element.getAttribute('data-stat');
+        let value = 0;
+        
+        switch(statType) {
+            case 'approved':
+                value = approvedCount;
+                break;
+            case 'pending':
+                value = pendingCount;
+                break;
+            case 'units':
+                value = totalUnits;
+                break;
+        }
+        
+        element.setAttribute('data-final', value);
+        element.textContent = '0';
+    });
+    
+    // Animation functions
+    function animateNumber(element, start, end, duration) {
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            element.innerHTML = Math.floor(progress * (end - start) + start);
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+    
+    // Animate statistics with staggered delays
+    setTimeout(() => {
+        document.querySelectorAll('[data-final]').forEach((statNumber, index) => {
+            const finalNumber = parseInt(statNumber.getAttribute('data-final'));
+            if (!isNaN(finalNumber)) {
+                setTimeout(() => {
+                    animateNumber(statNumber, 0, finalNumber, 1200);
+                }, index * 200);
+            }
+        });
+        
+        // Animate total requests
+        const totalElement = document.querySelector('.stat-total.stat-number');
+        if (totalElement) {
+            const totalValue = parseInt(totalElement.textContent);
+            if (!isNaN(totalValue)) {
+                totalElement.textContent = '0';
+                setTimeout(() => {
+                    animateNumber(totalElement, 0, totalValue, 1000);
+                }, 800);
+            }
+        }
+    }, 300);
+    
+    // Add interactive hover effects
+    document.querySelectorAll('.modern-requests-table tbody tr').forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-3px)';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+        
+        row.addEventListener('click', function() {
+            // Add ripple effect for row click
+            this.style.background = 'rgba(220, 53, 69, 0.15)';
+            setTimeout(() => {
+                this.style.background = '';
+            }, 400);
+        });
+    });
+    
+    // Enhanced status badge interactions
+    document.querySelectorAll('.status-pending').forEach(badge => {
+        badge.addEventListener('mouseenter', function() {
+            this.style.animationPlayState = 'paused';
+            this.style.transform = 'scale(1.1)';
+        });
+        
+        badge.addEventListener('mouseleave', function() {
+            this.style.animationPlayState = 'running';
+            this.style.transform = 'scale(1)';
+        });
+    });
+    
+    // Intersection observer for animations
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    });
+    
+    document.querySelectorAll('.stat-card').forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'all 0.6s ease';
+        observer.observe(card);
+    });
+    
+    // Add tooltip functionality for truncated reasons
+    document.querySelectorAll('.reason-cell[title]').forEach(cell => {
+        cell.addEventListener('mouseenter', function() {
+            this.style.whiteSpace = 'normal';
+            this.style.maxWidth = 'none';
+            this.style.background = 'rgba(220, 53, 69, 0.1)';
+            this.style.padding = '0.5rem';
+            this.style.borderRadius = '8px';
+            this.style.position = 'relative';
+            this.style.zIndex = '1000';
+        });
+        
+        cell.addEventListener('mouseleave', function() {
+            this.style.whiteSpace = 'nowrap';
+            this.style.maxWidth = '250px';
+            this.style.background = '';
+            this.style.padding = '';
+            this.style.borderRadius = '';
+            this.style.position = '';
+            this.style.zIndex = '';
+        });
+    });
+});
+</script>
+
+{% endblock content %}

@@ -1,0 +1,498 @@
+{% extends 'blood/adminbase.html' %}
+{% block content %}
+{% load widget_tweaks %}
+<head>
+<style>
+    /* Blood Samaritan themed styling */
+    .page-header {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        padding: 2.5rem 0;
+        margin-bottom: 3rem;
+        border-radius: 0 0 30px 30px;
+        box-shadow: 0 6px 25px rgba(220, 53, 69, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 100px;
+        height: 100px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+        animation: float 6s ease-in-out infinite;
+    }
+    
+    .page-header::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: -5%;
+        width: 60px;
+        height: 60px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 50%;
+        animation: float 8s ease-in-out infinite reverse;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+    }
+    
+    .page-title {
+        font-size: 3rem;
+        font-weight: 800;
+        text-align: center;
+        margin: 0;
+        text-shadow: 0 3px 6px rgba(0,0,0,0.3);
+        position: relative;
+        z-index: 2;
+    }
+    
+    .page-subtitle {
+        text-align: center;
+        margin-top: 0.8rem;
+        opacity: 0.95;
+        font-size: 1.2rem;
+        position: relative;
+        z-index: 2;
+    }
+    
+    /* Blood type cards styling */
+    .blood-inventory {
+        margin-bottom: 4rem;
+    }
+    
+    .blood-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        padding: 2rem 1.5rem;
+        margin-bottom: 2rem;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 3px solid transparent;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .blood-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    }
+    
+    .blood-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 15px 40px rgba(220, 53, 69, 0.2);
+        border-color: #dc3545;
+    }
+    
+    .blood-type {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .blood-type h2 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #dc3545;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+    }
+    
+    .blood-icon {
+        font-size: 2rem;
+        color: #dc3545;
+        animation: drip 3s ease-in-out infinite;
+    }
+    
+    @keyframes drip {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-5px); }
+    }
+    
+    .blood-amount {
+        text-align: center;
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #495057;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 1rem;
+        border-radius: 15px;
+        border: 2px solid #dee2e6;
+    }
+    
+    /* Stock level indicators */
+    .stock-indicator {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        animation: pulse-stock 2s infinite;
+    }
+    
+    .stock-high { background: #28a745; }
+    .stock-medium { background: #ffc107; }
+    .stock-low { background: #dc3545; }
+    
+    @keyframes pulse-stock {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(1.2); }
+    }
+    
+    /* Update form styling */
+    .update-section {
+        background: white;
+        border-radius: 25px;
+        padding: 3rem;
+        box-shadow: 0 10px 35px rgba(0,0,0,0.1);
+        margin-top: 3rem;
+        border-top: 5px solid #dc3545;
+    }
+    
+    .section-title {
+        text-align: center;
+        color: #dc3545;
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-bottom: 2.5rem;
+        position: relative;
+    }
+    
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border-radius: 2px;
+    }
+    
+    .update-form {
+        display: flex;
+        justify-content: center;
+        align-items: end;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .form-group {
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 0.8rem;
+        color: #495057;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    
+    .enhanced-select,
+    .enhanced-input {
+        width: 100%;
+        padding: 1rem 1.2rem;
+        border: 2px solid #e9ecef;
+        border-radius: 15px;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        background: white;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .enhanced-select:focus,
+    .enhanced-input:focus {
+        outline: none;
+        border-color: #dc3545;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .enhanced-select option {
+        padding: 0.8rem;
+        font-size: 1rem;
+    }
+    
+    .update-btn {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        border: none;
+        padding: 1rem 2.5rem;
+        border-radius: 15px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        min-width: 180px;
+    }
+    
+    .update-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+        background: linear-gradient(135deg, #c82333 0%, #b21e2f 100%);
+    }
+    
+    .update-btn:active {
+        transform: translateY(-1px);
+    }
+    
+    /* Summary statistics */
+    .stats-summary {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 3rem;
+        border: 2px solid #dee2e6;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #dc3545;
+        display: block;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        margin-top: 0.5rem;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .page-title {
+            font-size: 2.2rem;
+        }
+        
+        .blood-card {
+            margin-bottom: 1.5rem;
+            padding: 1.5rem 1rem;
+        }
+        
+        .blood-type h2 {
+            font-size: 2rem;
+        }
+        
+        .blood-amount {
+            font-size: 1.5rem;
+        }
+        
+        .update-form {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .form-group {
+            min-width: unset;
+        }
+        
+        .update-section {
+            padding: 2rem 1.5rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+</head>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">🏥 Blood Stock Management</h1>
+        <p class="page-subtitle">Monitor and manage life-saving blood inventory</p>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Blood Inventory Display -->
+    <div class="blood-inventory">
+        <!-- Positive Blood Types Row -->
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="blood-card">
+                    <div class="stock-indicator stock-{% if A1.unit > 500 %}high{% elif A1.unit > 200 %}medium{% else %}low{% endif %}"></div>
+                    <div class="blood-type">
+                        <h2>A+</h2>
+                        <i class="fas fa-tint blood-icon"></i>
+                    </div>
+                    <div class="blood-amount">
+                        {{A1.unit}} ml
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="blood-card">
+                    <div class="stock-indicator stock-{% if B1.unit > 500 %}high{% elif B1.unit > 200 %}medium{% else %}low{% endif %}"></div>
+                    <div class="blood-type">
+                        <h2>B+</h2>
+                        <i class="fas fa-tint blood-icon"></i>
+                    </div>
+                    <div class="blood-amount">
+                        {{B1.unit}} ml
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="blood-card">
+                    <div class="stock-indicator stock-{% if O1.unit > 500 %}high{% elif O1.unit > 200 %}medium{% else %}low{% endif %}"></div>
+                    <div class="blood-type">
+                        <h2>O+</h2>
+                        <i class="fas fa-tint blood-icon"></i>
+                    </div>
+                    <div class="blood-amount">
+                        {{O1.unit}} ml
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="blood-card">
+                    <div class="stock-indicator stock-{% if AB1.unit > 500 %}high{% elif AB1.unit > 200 %}medium{% else %}low{% endif %}"></div>
+                    <div class="blood-type">
+                        <h2>AB+</h2>
+                        <i class="fas fa-tint blood-icon"></i>
+                    </div>
+                    <div class="blood-amount">
+                        {{AB1.unit}} ml
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Negative Blood Types Row -->
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="blood-card">
+                    <div class="stock-indicator stock-{% if A2.unit > 500 %}high{% elif A2.unit > 200 %}medium{% else %}low{% endif %}"></div>
+                    <div class="blood-type">
+                        <h2>A-</h2>
+                        <i class="fas fa-tint blood-icon"></i>
+                    </div>
+                    <div class="blood-amount">
+                        {{A2.unit}} ml
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="blood-card">
+                    <div class="stock-indicator stock-{% if B2.unit > 500 %}high{% elif B2.unit > 200 %}medium{% else %}low{% endif %}"></div>
+                    <div class="blood-type">
+                        <h2>B-</h2>
+                        <i class="fas fa-tint blood-icon"></i>
+                    </div>
+                    <div class="blood-amount">
+                        {{B2.unit}} ml
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="blood-card">
+                    <div class="stock-indicator stock-{% if O2.unit > 500 %}high{% elif O2.unit > 200 %}medium{% else %}low{% endif %}"></div>
+                    <div class="blood-type">
+                        <h2>O-</h2>
+                        <i class="fas fa-tint blood-icon"></i>
+                    </div>
+                    <div class="blood-amount">
+                        {{O2.unit}} ml
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="blood-card">
+                    <div class="stock-indicator stock-{% if AB2.unit > 500 %}high{% elif AB2.unit > 200 %}medium{% else %}low{% endif %}"></div>
+                    <div class="blood-type">
+                        <h2>AB-</h2>
+                        <i class="fas fa-tint blood-icon"></i>
+                    </div>
+                    <div class="blood-amount">
+                        {{AB2.unit}} ml
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Stock Section -->
+    <div class="update-section">
+        <h3 class="section-title">🔄 Update Blood Stock</h3>
+        
+        <form class="update-form" method="POST">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label class="form-label" for="bloodgroup">🩸 Blood Group</label>
+                <select name="bloodgroup" id="bloodgroup" class="enhanced-select" required>
+                    <option disabled="disabled" selected="selected">Choose a Blood Group</option>
+                    <option value="O+">O+ (Universal Donor+)</option>
+                    <option value="O-">O- (Universal Donor)</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+ (Universal Recipient)</option>
+                    <option value="AB-">AB-</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="unit">💉 Amount (ml)</label>
+                <input type="number" id="unit" class="enhanced-input" name="unit" placeholder="Enter amount in ml" min="1" required>
+            </div>
+            
+            <button type="submit" class="update-btn">
+                📊 Update Stock
+            </button>
+        </form>
+    </div>
+</div>
+
+{% endblock content %}

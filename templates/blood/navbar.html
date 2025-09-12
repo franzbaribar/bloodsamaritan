@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+  <style type="text/css">
+    :root {
+      --primary-red: #dc2626;
+      --secondary-red: #ef4444;
+      --dark-red: #991b1b;
+      --accent-pink: #f472b6;
+      --light-pink: #fdf2f8;
+      --white: #ffffff;
+      --shadow: rgba(220, 38, 38, 0.2);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #fef7f7 0%, #fdf2f8 100%);
+      min-height: 100vh;
+      padding-top: 80px;
+    }
+
+    .navbar {
+      background: linear-gradient(135deg, var(--primary-red) 0%, var(--secondary-red) 100%);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px var(--shadow);
+      border: none;
+      padding: 1rem 0;
+      transition: all 0.3s ease;
+    }
+
+    .navbar.scrolled {
+      padding: 0.5rem 0;
+      box-shadow: 0 4px 20px var(--shadow);
+    }
+
+    .navbar-brand {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--white) !important;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .navbar-brand:hover {
+      color: var(--white) !important;
+      transform: translateY(-2px);
+    }
+
+    .navbar-brand i {
+      animation: heartbeat 1.5s infinite;
+      color: var(--accent-pink);
+      margin-right: 8px;
+      font-size: 1.2em;
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .navbar-nav {
+      align-items: center;
+    }
+
+    .nav-item {
+      margin: 0 0.5rem;
+      position: relative;
+    }
+
+    .nav-link {
+      color: var(--white) !important;
+      font-weight: 500;
+      padding: 0.75rem 1.25rem !important;
+      border-radius: 25px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      text-decoration: none;
+    }
+
+    .nav-link::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .nav-link:hover::before {
+      left: 100%;
+    }
+
+    .nav-link:hover {
+      color: var(--white) !important;
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .nav-link.active {
+      background: var(--white);
+      color: var(--primary-red) !important;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .nav-link i {
+      margin-right: 8px;
+      transition: transform 0.3s ease;
+    }
+
+    .nav-link:hover i {
+      transform: scale(1.2);
+    }
+
+    .navbar-toggler {
+      border: 2px solid var(--white);
+      border-radius: 10px;
+      padding: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .navbar-toggler:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: rotate(90deg);
+    }
+
+    .navbar-toggler-icon {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    }
+
+    .navbar-collapse {
+      border-radius: 15px;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    @media (max-width: 768px) {
+      .nav-link {
+        margin: 0.25rem 0;
+        text-align: center;
+      }
+      
+      .navbar-brand {
+        font-size: 1.2rem;
+      }
+    }
+
+    /* Demo content */
+    .demo-content {
+      padding: 4rem 2rem;
+      text-align: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .demo-title {
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--primary-red);
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--primary-red), var(--secondary-red));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .demo-subtitle {
+      font-size: 1.2rem;
+      color: #6b7280;
+      margin-bottom: 2rem;
+    }
+
+    .feature-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+
+    .feature-card {
+      background: var(--white);
+      padding: 2rem;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      border-top: 4px solid var(--primary-red);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .feature-icon {
+      font-size: 3rem;
+      color: var(--primary-red);
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-md fixed-top" id="mainNavbar">
+    <div class="container">
+      <a href="/" class="navbar-brand">
+        <i class="fas fa-heartbeat"></i>Blood Samaritan
+      </a>
+      
+      <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbarCollapse">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarCollapse">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="/">
+              <i class="fas fa-home"></i>Home
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/patient/patientlogin">
+              <i class="fas fa-procedures"></i>Patient
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/donor/donorlogin">
+              <i class="fas fa-user"></i>Donor
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/adminlogin">
+              <i class="fas fa-user-shield"></i>Admin
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Demo Content -->
+  <div class="demo-content">
+    <h1 class="demo-title">Blood Samaritan</h1>
+    <p class="demo-subtitle">Connecting lives through the gift of blood donation</p>
+    
+    <div class="feature-cards">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-home"></i>
+        </div>
+        <h3>Home</h3>
+        <p>Access our main dashboard and latest updates</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-procedures"></i>
+        </div>
+        <h3>Patient Portal</h3>
+        <p>Find blood donors and manage your medical needs</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-user"></i>
+        </div>
+        <h3>Donor Portal</h3>
+        <p>Register as a donor and help save lives</p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">
+          <i class="fas fa-user-shield"></i>
+        </div>
+        <h3>Admin Panel</h3>
+        <p>Manage the platform and oversee operations</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    $(document).ready(function() {
+      // Add scroll effect to navbar
+      $(window).scroll(function() {
+        if ($(document).scrollTop() > 50) {
+          $('#mainNavbar').addClass('scrolled');
+        } else {
+          $('#mainNavbar').removeClass('scrolled');
+        }
+      });
+
+      // Add active state management
+      $('.nav-link').click(function(e) {
+        $('.nav-link').removeClass('active');
+        $(this).addClass('active');
+      });
+
+      // Smooth scroll for anchor links
+      $('a[href^="#"]').on('click', function(event) {
+        var target = $(this.getAttribute('href'));
+        if (target.length) {
+          event.preventDefault();
+          $('html, body').animate({
+            scrollTop: target.offset().top - 70
+          }, 1000);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

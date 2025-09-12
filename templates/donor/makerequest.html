@@ -1,0 +1,672 @@
+{% extends 'donor/donorbase.html' %}
+{% block content %}
+{% load widget_tweaks %}
+{%load static%}
+<head>
+    <!-- Font special for pages-->
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
+    <!-- Main CSS-->
+    <link href="{% static "css/main.css" %}" rel="stylesheet" media="all">
+    <!-- Custom styles for this page -->
+    <style>
+        .blood-request-form {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .background-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        
+        .floating-cross {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.08);
+            font-size: 3rem;
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        .floating-cross:nth-child(1) { top: 15%; left: 8%; animation-delay: 0s; }
+        .floating-cross:nth-child(2) { top: 35%; right: 12%; animation-delay: 3s; }
+        .floating-cross:nth-child(3) { top: 65%; left: 15%; animation-delay: 6s; }
+        .floating-cross:nth-child(4) { top: 85%; right: 20%; animation-delay: 2s; }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-25px) rotate(5deg); }
+        }
+        
+        .form-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            overflow: hidden;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .form-header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            padding: 3rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .form-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.6; }
+            50% { transform: scale(1.2) rotate(180deg); opacity: 1; }
+        }
+        
+        .form-title {
+            color: white;
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin: 0;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .form-subtitle {
+            color: rgba(255,255,255,0.95);
+            font-size: 1.2rem;
+            margin-top: 0.8rem;
+            font-weight: 400;
+            position: relative;
+            z-index: 2;
+            line-height: 1.5;
+        }
+        
+        .emergency-icon {
+            font-size: 4rem;
+            color: white;
+            margin-bottom: 1rem;
+            animation: emergency-pulse 1.5s ease-in-out infinite;
+            position: relative;
+            z-index: 2;
+        }
+        
+        @keyframes emergency-pulse {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.15); filter: brightness(1.3); }
+        }
+        
+        .urgent-banner {
+            background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.9rem;
+            animation: urgent-blink 2s ease-in-out infinite;
+        }
+        
+        @keyframes urgent-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .form-body {
+            padding: 3rem 2.5rem;
+            position: relative;
+        }
+        
+        .priority-notice {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(238, 90, 90, 0.1) 100%);
+            border: 2px solid rgba(255, 107, 107, 0.3);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2.5rem;
+            text-align: center;
+        }
+        
+        .priority-title {
+            color: #dc3545;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .priority-desc {
+            color: #6c757d;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2.5rem;
+            margin-bottom: 2.5rem;
+        }
+        
+        .form-field {
+            position: relative;
+        }
+        
+        .form-field.full-width {
+            grid-column: span 2;
+        }
+        
+        .field-label {
+            display: block;
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            font-size: 1.05rem;
+            position: relative;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .field-label::after {
+            content: '*';
+            color: #dc3545;
+            margin-left: 4px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .field-label::before {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 30px;
+            height: 3px;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            border-radius: 2px;
+        }
+        
+        .input-wrapper {
+            position: relative;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 1.2rem 1.5rem;
+            border: 3px solid #e9ecef;
+            border-radius: 15px;
+            font-size: 1.05rem;
+            transition: all 0.4s ease;
+            background: #f8f9fa;
+            box-sizing: border-box;
+            font-weight: 500;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #dc3545;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15);
+            transform: translateY(-3px);
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 1.2rem 1.5rem;
+            border: 3px solid #e9ecef;
+            border-radius: 15px;
+            font-size: 1.05rem;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23dc3545' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 1rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 3.5rem;
+            font-weight: 600;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: #dc3545;
+            background-color: white;
+            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15);
+            transform: translateY(-3px);
+        }
+        
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #dc3545;
+            font-size: 1.2rem;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        .input-with-icon {
+            padding-left: 3rem;
+        }
+        
+        .request-button {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            border: none;
+            padding: 1.5rem 4rem;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            min-width: 250px;
+            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
+        }
+        
+        .request-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.4s ease;
+        }
+        
+        .request-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(220, 53, 69, 0.4);
+            filter: brightness(1.1);
+        }
+        
+        .request-button:hover::before {
+            width: 400px;
+            height: 400px;
+        }
+        
+        .request-button:active {
+            transform: translateY(-2px);
+        }
+        
+        .button-container {
+            text-align: center;
+            margin-top: 3rem;
+            position: relative;
+        }
+        
+        .help-text {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-left: 5px solid #2196f3;
+        }
+        
+        .help-title {
+            color: #1976d2;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .help-desc {
+            color: #424242;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0;
+        }
+        
+        .emergency-contacts {
+            background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            text-align: center;
+        }
+        
+        .emergency-title {
+            color: #f57c00;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        
+        .contact-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            font-weight: 600;
+            color: #2c3e50;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .blood-request-form {
+                padding: 1rem 0;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .form-field.full-width {
+                grid-column: span 1;
+            }
+            
+            .form-container {
+                margin: 1rem;
+                border-radius: 20px;
+            }
+            
+            .form-header {
+                padding: 2.5rem 1.5rem;
+            }
+            
+            .form-title {
+                font-size: 2.2rem;
+            }
+            
+            .emergency-icon {
+                font-size: 3rem;
+            }
+            
+            .form-body {
+                padding: 2rem 1.5rem;
+            }
+            
+            .contact-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .request-button {
+                padding: 1.2rem 2.5rem;
+                font-size: 1.1rem;
+                min-width: 200px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .form-title {
+                font-size: 1.8rem;
+            }
+            
+            .form-subtitle {
+                font-size: 1rem;
+            }
+            
+            .form-input,
+            .form-select {
+                padding: 1rem 1.2rem;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<div class="blood-request-form">
+    <div class="background-elements">
+        <div class="floating-cross">🏥</div>
+        <div class="floating-cross">🚑</div>
+        <div class="floating-cross">⚕️</div>
+        <div class="floating-cross">🩺</div>
+    </div>
+    
+    <div class="form-container">
+        <div class="urgent-banner">
+            ⚠️ EMERGENCY BLOOD REQUEST SYSTEM ⚠️
+        </div>
+        
+        <div class="form-header">
+            <div class="emergency-icon">🚨</div>
+            <h1 class="form-title">MAKE BLOOD REQUEST</h1>
+            <p class="form-subtitle">Request blood for urgent medical needs.<br>Our network will respond immediately to help save lives.</p>
+        </div>
+        
+        <div class="form-body">
+            <div class="priority-notice">
+                <div class="priority-title">
+                    <span>🩸</span>
+                    Priority Emergency Request
+                </div>
+                <p class="priority-desc">
+                    This form is for urgent blood requirements. All requests are processed immediately 
+                    and matched with available donors in your area. Please provide accurate information 
+                    to ensure fast response.
+                </p>
+            </div>
+            
+            <form method="POST" autocomplete="off" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label class="field-label">Patient's Name</label>
+                        <div class="input-wrapper">
+                            <div class="input-icon">👤</div>
+                            {% render_field request_form.patient_name|attr:'required:true'|attr:'placeholder:Enter patient full name' class="form-input input-with-icon" %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-field">
+                        <label class="field-label">Patient Age</label>
+                        <div class="input-wrapper">
+                            <div class="input-icon">📅</div>
+                            {% render_field request_form.patient_age|attr:'required:true'|attr:'placeholder:Age in years' class="form-input input-with-icon" %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-field">
+                        <label class="field-label">Blood Group Required</label>
+                        <div class="input-wrapper">
+                            <select name="bloodgroup" class="form-select" required>
+                                <option disabled="disabled" selected="selected">Select blood type needed</option>
+                                <option value="O+">O+ (Universal Donor)</option>
+                                <option value="O-">O- (Universal Donor)</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+ (Universal Recipient)</option>
+                                <option value="AB-">AB-</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-field">
+                        <label class="field-label">Units Required (ml)</label>
+                        <div class="input-wrapper">
+                            <div class="input-icon">🩸</div>
+                            {% render_field request_form.unit|attr:'required:true'|attr:'placeholder:e.g., 450, 900' class="form-input input-with-icon" %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-field full-width">
+                        <label class="field-label">Medical Reason / Emergency Details</label>
+                        <div class="input-wrapper">
+                            {% render_field request_form.reason|attr:'required:true'|attr:'placeholder:Describe the medical condition, surgery type, or emergency situation requiring blood transfusion' class="form-input form-textarea" %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="help-text">
+                    <div class="help-title">📋 Important Information</div>
+                    <p class="help-desc">
+                        All requests are verified by our medical team. Priority is given to life-threatening 
+                        emergencies. Please ensure all information is accurate to expedite the matching process.
+                    </p>
+                </div>
+                
+                <div class="button-container">
+                    <button class="request-button" type="submit">
+                        <span>🚨 SUBMIT REQUEST</span>
+                    </button>
+                </div>
+                
+                <div class="emergency-contacts">
+                    <div class="emergency-title">Emergency Hotlines</div>
+                    <div class="contact-grid">
+                        <div class="contact-item">📞 Emergency: 911</div>
+                        <div class="contact-item">🏥 Blood Bank: (555) 0123</div>
+                        <div class="contact-item">🚑 Ambulance: 911</div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add interactive animations to form elements
+    const inputs = document.querySelectorAll('.form-input, .form-select');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.style.transform = 'translateY(-3px)';
+            this.style.borderColor = '#dc3545';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.parentElement.style.transform = 'translateY(0)';
+        });
+        
+        // Add typing animation
+        input.addEventListener('input', function() {
+            this.style.borderColor = '#28a745';
+            setTimeout(() => {
+                if (this !== document.activeElement) {
+                    this.style.borderColor = '#e9ecef';
+                }
+            }, 1000);
+        });
+    });
+    
+    // Add enhanced click effect to request button
+    const requestButton = document.querySelector('.request-button');
+    requestButton.addEventListener('click', function(e) {
+        // Create multiple ripple effects for emergency feeling
+        for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${x}px;
+                    top: ${y}px;
+                    background: rgba(255, 255, 255, ${0.6 - i * 0.2});
+                    border-radius: 50%;
+                    transform: scale(0);
+                    animation: ripple 0.8s linear;
+                    pointer-events: none;
+                `;
+                
+                this.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 800);
+            }, i * 100);
+        }
+    });
+    
+    // Add form validation enhancements
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.style.borderColor = '#dc3545';
+                field.style.animation = 'shake 0.5s ease-in-out';
+                isValid = false;
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            // Add shake animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+            `;
+            document.head.appendChild(style);
+        } else {
+            // Success animation
+            requestButton.innerHTML = '<span>✅ PROCESSING REQUEST...</span>';
+            requestButton.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+        }
+    });
+    
+    // Add blood group selection enhancement
+    const bloodGroupSelect = document.querySelector('select[name="bloodgroup"]');
+    bloodGroupSelect.addEventListener('change', function() {
+        if (this.value.includes('O')) {
+            // Highlight universal donor options
+            this.style.background = 'linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%)';
+            this.style.color = '#155724';
+        } else if (this.value.includes('AB')) {
+            // Highlight universal recipient
+            this.style.background = 'linear-gradient(135deg, #cce5ff 0%, #b3d9ff 100%)';
+            this.style.color = '#004085';
+        } else {
+            this.style.background = 'white';
+            this.style.color = '#2c3e50';
+        }
+    });
+});
+</script>
+
+{% endblock content %}

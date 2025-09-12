@@ -1,0 +1,599 @@
+{% extends 'blood/adminbase.html' %}
+{% block content %}
+{% load widget_tweaks %}
+{%load static%}
+
+<style>
+.requests-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.page-title {
+    text-align: center;
+    color: #d41010;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    text-shadow: 0 2px 4px rgba(212, 16, 16, 0.1);
+    position: relative;
+}
+
+.page-title::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 4px;
+    background: linear-gradient(90deg, #d41010, #ff4757);
+    border-radius: 2px;
+}
+
+.page-subtitle {
+    text-align: center;
+    color: #6c757d;
+    font-size: 1.1rem;
+    margin-bottom: 3rem;
+    font-weight: 300;
+}
+
+.alert-message {
+    background: linear-gradient(135deg, #dc3545, #e74c3c);
+    color: #ffffff;
+    border: none;
+    border-radius: 15px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    box-shadow: 0 8px 25px rgba(220, 53, 69, 0.2);
+    animation: pulse-alert 2s infinite;
+}
+
+@keyframes pulse-alert {
+    0% { opacity: 0.9; }
+    50% { opacity: 1; }
+    100% { opacity: 0.9; }
+}
+
+.alert-icon {
+    font-size: 1.5rem;
+    margin-right: 1rem;
+}
+
+.table-container {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin: 2rem 0;
+    border: none;
+}
+
+.requests-table {
+    margin: 0;
+    border: none;
+    background: transparent;
+}
+
+.requests-table thead {
+    background: linear-gradient(135deg, #d41010 0%, #b71c1c 100%);
+    border: none;
+}
+
+.requests-table thead th {
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 1.2rem 0.8rem;
+    border: none;
+    text-align: center;
+    position: relative;
+}
+
+.requests-table thead th:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 25%;
+    height: 50%;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.requests-table tbody tr {
+    transition: all 0.3s ease;
+    border: none;
+    background: #ffffff;
+    position: relative;
+}
+
+.requests-table tbody tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.requests-table tbody tr:hover {
+    background: linear-gradient(90deg, rgba(212, 16, 16, 0.05), rgba(255, 71, 87, 0.05));
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(212, 16, 16, 0.1);
+}
+
+.urgent-request {
+    border-left: 4px solid #dc3545;
+    background: linear-gradient(90deg, rgba(220, 53, 69, 0.05), transparent);
+}
+
+.urgent-indicator {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(to bottom, #dc3545, #ff4757);
+    animation: pulse 2s infinite;
+}
+
+.requests-table tbody td {
+    padding: 1rem 0.8rem;
+    border: none;
+    vertical-align: middle;
+    text-align: center;
+    font-weight: 500;
+    color: #495057;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.patient-name {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.age-badge {
+    background: linear-gradient(135deg, #17a2b8, #20c997);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    display: inline-block;
+    min-width: 50px;
+}
+
+.reason-tag {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    color: #212529;
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    text-transform: capitalize;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.blood-group-badge {
+    background: linear-gradient(135deg, #d41010, #ff4757);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 0.4rem 1rem;
+    border-radius: 25px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 3px 10px rgba(212, 16, 16, 0.3);
+    display: inline-block;
+}
+
+.unit-badge {
+    background: linear-gradient(135deg, #6f42c1, #007bff);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+.date-text {
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.status-badge {
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 0.4rem 1rem;
+    border-radius: 25px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    min-width: 80px;
+}
+
+.status-pending {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    color: #212529;
+    animation: pulse-warning 2s infinite;
+}
+
+.status-approved {
+    background: linear-gradient(135deg, #28a745, #34ce57);
+    color: #ffffff;
+}
+
+.status-rejected {
+    background: linear-gradient(135deg, #dc3545, #e74c3c);
+    color: #ffffff;
+}
+
+@keyframes pulse-warning {
+    0% { opacity: 0.8; }
+    50% { opacity: 1; }
+    100% { opacity: 0.8; }
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-approve {
+    background: linear-gradient(135deg, #28a745, #34ce57);
+    border: none;
+    color: white;
+    padding: 0.4rem 1rem;
+    border-radius: 25px;
+    font-weight: 500;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-approve:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.btn-reject {
+    background: linear-gradient(135deg, #dc3545, #e74c3c);
+    border: none;
+    color: white;
+    padding: 0.4rem 1rem;
+    border-radius: 25px;
+    font-weight: 500;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-reject:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.requests-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.stat-card {
+    background: #ffffff;
+    border-radius: 15px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    min-width: 150px;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card.total {
+    border-top: 4px solid #d41010;
+}
+
+.stat-card.pending {
+    border-top: 4px solid #ffc107;
+}
+
+.stat-card.approved {
+    border-top: 4px solid #28a745;
+}
+
+.stat-card.rejected {
+    border-top: 4px solid #dc3545;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card.total .stat-number { color: #d41010; }
+.stat-card.pending .stat-number { color: #ffc107; }
+.stat-card.approved .stat-number { color: #28a745; }
+.stat-card.rejected .stat-number { color: #dc3545; }
+
+.stat-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-icon {
+    font-size: 1.2rem;
+    margin-right: 0.5rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+    margin: 2rem 0;
+}
+
+.empty-state-icon {
+    font-size: 5rem;
+    color: #d41010;
+    margin-bottom: 2rem;
+    opacity: 0.3;
+}
+
+.empty-state-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #d41010;
+    margin-bottom: 1rem;
+}
+
+.empty-state-text {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: #495057;
+}
+
+.empty-state-subtext {
+    font-size: 1rem;
+    opacity: 0.8;
+    color: #6c757d;
+}
+
+.priority-indicator {
+    font-size: 0.8rem;
+    color: #dc3545;
+    margin-left: 0.5rem;
+    animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 2rem;
+    }
+    
+    .requests-table {
+        font-size: 0.8rem;
+    }
+    
+    .requests-table tbody td {
+        padding: 0.7rem 0.5rem;
+    }
+    
+    .requests-table thead th {
+        padding: 1rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+    
+    .btn-approve, .btn-reject {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.8rem;
+    }
+    
+    .reason-tag {
+        max-width: 80px;
+        font-size: 0.7rem;
+    }
+    
+    .requests-stats {
+        gap: 1rem;
+    }
+    
+    .stat-card {
+        padding: 1rem 1.5rem;
+        min-width: 120px;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .table-container {
+        margin: 1rem -15px;
+        border-radius: 0;
+    }
+    
+    .requests-container {
+        padding: 1rem 0;
+    }
+    
+    .requests-table thead th {
+        padding: 1rem 0.3rem;
+        font-size: 0.7rem;
+    }
+    
+    .requests-table tbody td {
+        padding: 0.7rem 0.3rem;
+    }
+    
+    .alert-message {
+        margin: 1rem -15px 2rem -15px;
+        border-radius: 0;
+        font-size: 1rem;
+    }
+}
+</style>
+
+<div class="requests-container">
+    <div class="container">
+        <h1 class="page-title">Blood Request Management</h1>
+        <p class="page-subtitle">Review and manage blood requests from patients</p>
+        
+        {% if message %}
+        <div class="alert-message">
+            <i class="fas fa-exclamation-triangle alert-icon"></i>
+            {{message}}
+        </div>
+        {% endif %}
+        
+        {% if requests %}
+        <!-- Request Statistics -->
+        <div class="requests-stats">
+            <div class="stat-card total">
+                <div class="stat-number">{{ requests|length }}</div>
+                <div class="stat-label">
+                    <i class="fas fa-hand-holding-medical stat-icon"></i>Total Requests
+                </div>
+            </div>
+        </div>
+        
+        <!-- Requests Table -->
+        <div class="table-container">
+            <table class="table requests-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Patient Name</th>
+                        <th scope="col">Age</th>
+                        <th scope="col">Reason</th>
+                        <th scope="col">Blood Group</th>
+                        <th scope="col">Unit (ml)</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in requests %}
+                    <tr {% if t.status == 'Urgent' %}class="urgent-request"{% endif %}>
+                        {% if t.status == 'Urgent' %}
+                        <div class="urgent-indicator"></div>
+                        {% endif %}
+                        
+                        <td class="patient-name">
+                            {{t.patient_name}}
+                            {% if t.status == 'Urgent' %}
+                            <span class="priority-indicator">
+                                <i class="fas fa-exclamation-triangle"></i> URGENT
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="age-badge">{{t.patient_age}} yrs</span>
+                        </td>
+                        <td>
+                            <span class="reason-tag" title="{{t.reason}}">{{t.reason}}</span>
+                        </td>
+                        <td>
+                            <span class="blood-group-badge">{{t.bloodgroup}}</span>
+                        </td>
+                        <td>
+                            <span class="unit-badge">{{t.unit}} ml</span>
+                        </td>
+                        <td class="date-text">{{t.date}}</td>
+                        <td>
+                            {% if t.status == 'Pending' or t.status == 'Urgent' %}
+                                <span class="status-badge status-pending">{{t.status}}</span>
+                            {% elif t.status == 'Approved' %}
+                                <span class="status-badge status-approved">{{t.status}}</span>
+                            {% else %}
+                                <span class="status-badge status-rejected">{{t.status}}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if t.status == 'Pending' or t.status == 'Urgent' %}
+                            <div class="action-buttons">
+                                <a href="{% url 'update-approve-status' t.id %}" class="btn-approve">
+                                    <i class="fa fa-check"></i> Approve
+                                </a>
+                                <a href="{% url 'update-reject-status' t.id %}" class="btn-reject">
+                                    <i class="fa fa-times"></i> Reject
+                                </a>
+                            </div>
+                            {% elif t.status == 'Approved' %}
+                            <span class="status-badge status-approved">
+                                <i class="fas fa-check-circle"></i> Processed
+                            </span>
+                            {% else %}
+                            <span class="status-badge status-rejected">
+                                <i class="fas fa-times-circle"></i> Declined
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-hand-holding-medical"></i>
+            </div>
+            <div class="empty-state-title">No Blood Requests Found</div>
+            <div class="empty-state-text">Currently no patients have requested blood</div>
+            <div class="empty-state-subtext">New requests will appear here when patients submit them</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock content %}

@@ -1,0 +1,392 @@
+{% extends 'blood/adminbase.html' %}
+{% block content %}
+{% load widget_tweaks %}
+{%load static%}
+
+<style>
+.donor-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.page-title {
+    text-align: center;
+    color: #d41010;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    text-shadow: 0 2px 4px rgba(212, 16, 16, 0.1);
+    position: relative;
+}
+
+.page-title::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 4px;
+    background: linear-gradient(90deg, #d41010, #ff4757);
+    border-radius: 2px;
+}
+
+.page-subtitle {
+    text-align: center;
+    color: #6c757d;
+    font-size: 1.1rem;
+    margin-bottom: 3rem;
+    font-weight: 300;
+}
+
+.table-container {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin: 2rem 0;
+    border: none;
+}
+
+.donor-table {
+    margin: 0;
+    border: none;
+    background: transparent;
+}
+
+.donor-table thead {
+    background: linear-gradient(135deg, #d41010 0%, #b71c1c 100%);
+    border: none;
+}
+
+.donor-table thead th {
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 1.2rem 1rem;
+    border: none;
+    text-align: center;
+    position: relative;
+}
+
+.donor-table thead th:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 25%;
+    height: 50%;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.donor-table tbody tr {
+    transition: all 0.3s ease;
+    border: none;
+    background: #ffffff;
+}
+
+.donor-table tbody tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.donor-table tbody tr:hover {
+    background: linear-gradient(90deg, rgba(212, 16, 16, 0.05), rgba(255, 71, 87, 0.05));
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(212, 16, 16, 0.1);
+}
+
+.donor-table tbody td {
+    padding: 1rem;
+    border: none;
+    vertical-align: middle;
+    text-align: center;
+    font-weight: 500;
+    color: #495057;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.profile-pic {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #d41010;
+    box-shadow: 0 4px 15px rgba(212, 16, 16, 0.2);
+    transition: all 0.3s ease;
+}
+
+.profile-pic:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(212, 16, 16, 0.3);
+}
+
+.blood-group-badge {
+    background: linear-gradient(135deg, #d41010, #ff4757);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 0.4rem 1rem;
+    border-radius: 25px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 3px 10px rgba(212, 16, 16, 0.3);
+    display: inline-block;
+}
+
+.donor-name {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.donor-address {
+    color: #6c757d;
+    font-size: 0.9rem;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.donor-contact {
+    color: #495057;
+    font-weight: 500;
+    font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-edit {
+    background: linear-gradient(135deg, #28a745, #34ce57);
+    border: none;
+    color: white;
+    padding: 0.4rem 1rem;
+    border-radius: 25px;
+    font-weight: 500;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-edit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.btn-delete {
+    background: linear-gradient(135deg, #dc3545, #e74c3c);
+    border: none;
+    color: white;
+    padding: 0.4rem 1rem;
+    border-radius: 25px;
+    font-weight: 500;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-delete:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.donor-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.stat-card {
+    background: #ffffff;
+    border-radius: 15px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    min-width: 150px;
+    border-top: 4px solid #d41010;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #d41010;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.empty-state-text {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.empty-state-subtext {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 2rem;
+    }
+    
+    .donor-table {
+        font-size: 0.85rem;
+    }
+    
+    .donor-table tbody td {
+        padding: 0.7rem 0.5rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+    
+    .btn-edit, .btn-delete {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.8rem;
+    }
+    
+    .donor-address {
+        max-width: 100px;
+    }
+    
+    .donor-stats {
+        gap: 1rem;
+    }
+    
+    .stat-card {
+        padding: 1rem 1.5rem;
+        min-width: 120px;
+    }
+}
+
+@media (max-width: 576px) {
+    .table-container {
+        margin: 1rem -15px;
+        border-radius: 0;
+    }
+    
+    .donor-container {
+        padding: 1rem 0;
+    }
+    
+    .profile-pic {
+        width: 40px;
+        height: 40px;
+    }
+}
+</style>
+
+<div class="donor-container">
+    <div class="container">
+        <h1 class="page-title">Donor Management</h1>
+        <p class="page-subtitle">Manage and monitor registered blood donors</p>
+        
+        <!-- Donor Statistics -->
+        <div class="donor-stats">
+            <div class="stat-card">
+                <div class="stat-number">{{ donors|length }}</div>
+                <div class="stat-label">Total Donors</div>
+            </div>
+        </div>
+        
+        <!-- Donors Table -->
+        {% if donors %}
+        <div class="table-container">
+            <table class="table donor-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Photo</th>
+                        <th scope="col">Blood Group</th>
+                        <th scope="col">Address</th>
+                        <th scope="col">Contact</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in donors %}
+                    <tr>
+                        <td class="donor-name">{{t.get_name}}</td>
+                        <td>
+                            <img src="{% static t.profile_pic.url %}" 
+                                 alt="Profile Pic" 
+                                 class="profile-pic" />
+                        </td>
+                        <td>
+                            <span class="blood-group-badge">{{t.bloodgroup}}</span>
+                        </td>
+                        <td class="donor-address" title="{{t.address}}">{{t.address}}</td>
+                        <td class="donor-contact">{{t.mobile}}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{% url 'update-donor' t.id %}" class="btn-edit">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <a href="{% url 'delete-donor' t.id %}" class="btn-delete">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="table-container">
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="empty-state-text">No Donors Found</div>
+                <div class="empty-state-subtext">There are currently no registered donors in the system.</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock content %}

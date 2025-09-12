@@ -1,0 +1,635 @@
+{% extends 'patient/patientbase.html' %}
+{% block content %}
+{% load widget_tweaks %}
+{%load static%}
+
+<head>
+    <style>
+        .requests-history-section {
+            padding: 60px 0;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .requests-history-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(circle at 2px 2px, rgba(229, 62, 62, 0.03) 1px, transparent 0);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .requests-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-header::before {
+            content: '📋';
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        .section-header h2 {
+            color: #e53e3e;
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-header h2::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, #e53e3e, #ff6b6b);
+            border-radius: 2px;
+        }
+
+        .section-header p {
+            color: #718096;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 70px rgba(229, 62, 62, 0.08);
+            border: 1px solid rgba(229, 62, 62, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .table-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #e53e3e, #ff6b6b);
+            border-radius: 24px 24px 0 0;
+        }
+
+        .enhanced-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 20px;
+            font-size: 0.95rem;
+            overflow: hidden;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            position: relative;
+        }
+
+        .table-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #e53e3e, #ff6b6b);
+        }
+
+        .table-header th {
+            padding: 20px 16px;
+            color: white;
+            font-weight: 700;
+            text-align: left;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+            position: relative;
+        }
+
+        .table-header th:first-child {
+            border-radius: 16px 0 0 0;
+        }
+
+        .table-header th:last-child {
+            border-radius: 0 16px 0 0;
+        }
+
+        .table-body tr {
+            background: white;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .table-body tr:hover {
+            background: rgba(229, 62, 62, 0.02);
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .table-body tr:last-child {
+            border-bottom: none;
+        }
+
+        .table-body tr:last-child td:first-child {
+            border-radius: 0 0 0 16px;
+        }
+
+        .table-body tr:last-child td:last-child {
+            border-radius: 0 0 16px 0;
+        }
+
+        .table-body td {
+            padding: 18px 16px;
+            color: #2d3748;
+            font-weight: 500;
+            border: none;
+            vertical-align: middle;
+        }
+
+        .patient-name {
+            font-weight: 700;
+            color: #e53e3e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .patient-name::before {
+            content: '👤';
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .blood-group {
+            font-weight: 700;
+            font-size: 1rem;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #e53e3e, #ff6b6b);
+            color: white;
+            display: inline-block;
+            min-width: 40px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+        }
+
+        .age-badge {
+            background: rgba(113, 128, 150, 0.1);
+            color: #4a5568;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-block;
+        }
+
+        .reason-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #4a5568;
+            line-height: 1.4;
+        }
+
+        .unit-value {
+            font-weight: 700;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .unit-value::after {
+            content: 'ml';
+            font-size: 0.8rem;
+            color: #718096;
+            font-weight: 400;
+        }
+
+        .date-cell {
+            color: #718096;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .status-badge {
+            padding: 10px 16px;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            min-width: 80px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .status-badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .status-badge:hover::before {
+            left: 100%;
+        }
+
+        .status-approved {
+            background: linear-gradient(135deg, #48bb78, #68d391);
+            color: white;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+        }
+
+        .status-approved::after {
+            content: '✓';
+            margin-left: 6px;
+            font-weight: 900;
+        }
+
+        .status-rejected {
+            background: linear-gradient(135deg, #f56565, #fc8181);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 101, 101, 0.3);
+        }
+
+        .status-rejected::after {
+            content: '✗';
+            margin-left: 6px;
+            font-weight: 900;
+        }
+
+        .status-pending {
+            background: linear-gradient(135deg, #ed8936, #fbb041);
+            color: white;
+            box-shadow: 0 4px 15px rgba(237, 137, 54, 0.3);
+            animation: pulse-pending 2s infinite;
+        }
+
+        .status-pending::after {
+            content: '⏳';
+            margin-left: 6px;
+        }
+
+        @keyframes pulse-pending {
+            0%, 100% { 
+                box-shadow: 0 4px 15px rgba(237, 137, 54, 0.3);
+            }
+            50% { 
+                box-shadow: 0 6px 20px rgba(237, 137, 54, 0.5);
+                transform: scale(1.02);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            color: #4a5568;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .table-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .total-requests {
+            color: #4a5568;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .total-requests span {
+            color: #e53e3e;
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-badge {
+            background: rgba(229, 62, 62, 0.1);
+            color: #e53e3e;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid rgba(229, 62, 62, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-badge:hover {
+            background: #e53e3e;
+            color: white;
+        }
+
+        .filter-badge.active {
+            background: #e53e3e;
+            color: white;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .enhanced-table {
+                font-size: 0.9rem;
+            }
+
+            .table-header th,
+            .table-body td {
+                padding: 15px 12px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .requests-container {
+                padding: 0 15px;
+            }
+
+            .table-container {
+                padding: 30px 20px;
+                overflow-x: auto;
+            }
+
+            .enhanced-table {
+                min-width: 800px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .requests-history-section {
+                padding: 40px 0;
+            }
+
+            .section-header h2 {
+                font-size: 2.2rem;
+            }
+
+            .table-container {
+                padding: 25px 15px;
+                margin: 0 5px;
+            }
+
+            .table-stats {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .status-badge {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+                min-width: 70px;
+            }
+
+            .blood-group {
+                font-size: 0.9rem;
+                padding: 6px 10px;
+            }
+        }
+
+        /* Loading animation */
+        .table-loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .table-loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #e53e3e;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Hover effects for rows */
+        .table-body tr {
+            cursor: pointer;
+        }
+
+        .table-body tr:hover .patient-name {
+            color: #c53030;
+        }
+
+        .table-body tr:hover .blood-group {
+            transform: scale(1.05);
+        }
+
+        /* Print styles */
+        @media print {
+            .requests-history-section {
+                background: white;
+                padding: 20px 0;
+            }
+
+            .table-container {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+
+            .status-badge {
+                background: none !important;
+                color: #000 !important;
+                border: 1px solid #000;
+            }
+        }
+    </style>
+</head>
+
+<div class="requests-history-section">
+    <div class="requests-container">
+        <div class="section-header">
+            <h2>My Blood Requests</h2>
+            <p>Track all your blood requests and their current status. Stay informed about your medical care journey.</p>
+        </div>
+
+        <div class="table-container">
+            {% if blood_request %}
+                <div class="table-stats">
+                    <div class="total-requests">
+                        Total Requests: <span>{{ blood_request|length }}</span>
+                    </div>
+                    <div class="table-actions">
+                        <div class="filter-badge active" onclick="filterRequests('all')">All</div>
+                        <div class="filter-badge" onclick="filterRequests('pending')">Pending</div>
+                        <div class="filter-badge" onclick="filterRequests('approved')">Approved</div>
+                        <div class="filter-badge" onclick="filterRequests('rejected')">Rejected</div>
+                    </div>
+                </div>
+
+                <table class="enhanced-table" id="requestsTable">
+                    <thead class="table-header">
+                        <tr>
+                            <th>Patient Name</th>
+                            <th>Age</th>
+                            <th>Medical Reason</th>
+                            <th>Blood Group</th>
+                            <th>Volume</th>
+                            <th>Request Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-body">
+                        {% for t in blood_request %}
+                        <tr data-status="{{ t.status|lower }}">
+                            <td>
+                                <div class="patient-name">{{ t.patient_name }}</div>
+                            </td>
+                            <td>
+                                <span class="age-badge">{{ t.patient_age }} years</span>
+                            </td>
+                            <td>
+                                <div class="reason-cell" title="{{ t.reason }}">{{ t.reason }}</div>
+                            </td>
+                            <td>
+                                <span class="blood-group">{{ t.bloodgroup }}</span>
+                            </td>
+                            <td>
+                                <span class="unit-value">{{ t.unit }}</span>
+                            </td>
+                            <td>
+                                <div class="date-cell">{{ t.date|date:"M d, Y" }}</div>
+                            </td>
+                            <td>
+                                {% if t.status == 'Approved' %}
+                                    <span class="status-badge status-approved">Approved</span>
+                                {% elif t.status == 'Rejected' %}
+                                    <span class="status-badge status-rejected">Rejected</span>
+                                {% else %}
+                                    <span class="status-badge status-pending">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">🩸</div>
+                    <h3>No Blood Requests Yet</h3>
+                    <p>You haven't made any blood requests. When you do, they will appear here for you to track their progress.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Filter functionality
+    function filterRequests(status) {
+        const table = document.getElementById('requestsTable');
+        const rows = table.querySelectorAll('tbody tr');
+        const filterButtons = document.querySelectorAll('.filter-badge');
+        
+        // Update active button
+        filterButtons.forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        // Filter rows
+        rows.forEach(row => {
+            const rowStatus = row.getAttribute('data-status');
+            if (status === 'all' || rowStatus === status) {
+                row.style.display = '';
+                row.style.animation = 'fadeIn 0.3s ease';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Add fade-in animation
+    document.addEventListener('DOMContentLoaded', function() {
+        const rows = document.querySelectorAll('.table-body tr');
+        rows.forEach((row, index) => {
+            row.style.opacity = '0';
+            row.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                row.style.transition = 'all 0.4s ease';
+                row.style.opacity = '1';
+                row.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+
+    // Add CSS for fade-in animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+
+{% endblock content %}

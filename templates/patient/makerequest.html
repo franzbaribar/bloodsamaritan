@@ -1,0 +1,540 @@
+{% extends 'patient/patientbase.html' %}
+{% block content %}
+{% load widget_tweaks %}
+{%load static%}
+<head>
+    <!-- Font special for pages-->
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
+    
+    <!-- Main CSS-->
+    <link href="{% static "css/main.css" %}"rel="stylesheet" media="all">
+    
+    <style>
+        .request-section {
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .request-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(circle at 2px 2px, rgba(229, 62, 62, 0.03) 1px, transparent 0);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .form-container {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .form-header::before {
+            content: '🩸';
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        .form-header h2 {
+            color: #e53e3e;
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .form-header h2::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, #e53e3e, #ff6b6b);
+            border-radius: 2px;
+        }
+
+        .form-header p {
+            color: #718096;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .blood-request-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 50px;
+            box-shadow: 0 25px 70px rgba(229, 62, 62, 0.1);
+            border: 1px solid rgba(229, 62, 62, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .blood-request-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #e53e3e, #ff6b6b);
+            border-radius: 24px 24px 0 0;
+        }
+
+        .form-group {
+            margin-bottom: 35px;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            color: #2d3748;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .form-label::before {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 4px;
+            background: #e53e3e;
+            border-radius: 50%;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 18px 24px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 400;
+            color: #2d3748;
+            background: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #e53e3e;
+            box-shadow: 0 0 0 4px rgba(229, 62, 62, 0.1), 0 8px 25px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .form-input::placeholder {
+            color: #a0aec0;
+        }
+
+        .form-select-wrapper {
+            position: relative;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 18px 24px;
+            padding-right: 50px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 400;
+            color: #2d3748;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #e53e3e;
+            box-shadow: 0 0 0 4px rgba(229, 62, 62, 0.1), 0 8px 25px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .form-select-wrapper::after {
+            content: '';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid #718096;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-select:focus + .form-select-wrapper::after {
+            border-top-color: #e53e3e;
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .blood-group-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 12px;
+        }
+
+        .blood-group-option {
+            position: relative;
+        }
+
+        .blood-group-option input[type="radio"] {
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .blood-group-label {
+            display: block;
+            padding: 15px 10px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #718096;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .blood-group-label::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(229, 62, 62, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .blood-group-option input[type="radio"]:checked + .blood-group-label {
+            border-color: #e53e3e;
+            color: #e53e3e;
+            background: rgba(229, 62, 62, 0.05);
+            transform: scale(1.05);
+        }
+
+        .blood-group-option input[type="radio"]:checked + .blood-group-label::before {
+            left: 100%;
+        }
+
+        .submit-button {
+            background: linear-gradient(135deg, #e53e3e 0%, #ff6b6b 100%);
+            color: white;
+            border: none;
+            padding: 20px 50px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(229, 62, 62, 0.3);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 200px;
+        }
+
+        .submit-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(229, 62, 62, 0.4);
+        }
+
+        .submit-button:hover::before {
+            left: 100%;
+        }
+
+        .submit-button:active {
+            transform: translateY(-1px);
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .form-row-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 35px;
+        }
+
+        .emergency-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: linear-gradient(135deg, #ff4757, #ff3742);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+            animation: pulse-emergency 2s infinite;
+        }
+
+        @keyframes pulse-emergency {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .request-section {
+                padding: 40px 15px;
+            }
+
+            .blood-request-card {
+                padding: 30px 25px;
+                margin: 0 10px;
+            }
+
+            .form-header h2 {
+                font-size: 2.2rem;
+            }
+
+            .form-row-group {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .blood-group-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+            }
+
+            .blood-group-label {
+                padding: 12px 8px;
+                font-size: 1rem;
+            }
+
+            .submit-button {
+                padding: 18px 40px;
+                font-size: 1.1rem;
+                width: 100%;
+            }
+        }
+
+        /* Loading state */
+        .submit-button.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .submit-button.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            margin: auto;
+            border: 2px solid transparent;
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Form validation styles */
+        .form-input.error, .form-select.error {
+            border-color: #f56565;
+            box-shadow: 0 0 0 4px rgba(245, 101, 101, 0.1);
+        }
+
+        .form-input.success, .form-select.success {
+            border-color: #48bb78;
+            box-shadow: 0 0 0 4px rgba(72, 187, 120, 0.1);
+        }
+
+        .error-message {
+            color: #f56565;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .error-message::before {
+            content: '⚠';
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+
+<div class="request-section">
+    <div class="form-container">
+        <div class="form-header">
+            <h2>Make Blood Request</h2>
+            <p>Submit your blood request with accurate information. Our medical team will review and process your request promptly to ensure you get the care you need.</p>
+        </div>
+
+        <div class="blood-request-card">
+            <div class="emergency-badge">Urgent Care</div>
+            
+            <form method="POST" autocomplete="off" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="form-row-group">
+                    <div class="form-group">
+                        <label class="form-label" for="patient_name">Patient Name</label>
+                        {% render_field request_form.patient_name|attr:'required:true' class="form-input" id="patient_name" placeholder="Enter full name" %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="patient_age">Patient Age</label>
+                        {% render_field request_form.patient_age|attr:'required:true' class="form-input" id="patient_age" placeholder="Enter age in years" %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="reason">Medical Reason</label>
+                    {% render_field request_form.reason|attr:'required:true' class="form-input" id="reason" placeholder="Describe the medical condition or reason for blood requirement" %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Blood Group Required</label>
+                    <div class="blood-group-grid">
+                        <div class="blood-group-option">
+                            <input type="radio" name="bloodgroup" value="O+" id="o_pos" required>
+                            <label class="blood-group-label" for="o_pos">O+</label>
+                        </div>
+                        <div class="blood-group-option">
+                            <input type="radio" name="bloodgroup" value="O-" id="o_neg" required>
+                            <label class="blood-group-label" for="o_neg">O-</label>
+                        </div>
+                        <div class="blood-group-option">
+                            <input type="radio" name="bloodgroup" value="A+" id="a_pos" required>
+                            <label class="blood-group-label" for="a_pos">A+</label>
+                        </div>
+                        <div class="blood-group-option">
+                            <input type="radio" name="bloodgroup" value="A-" id="a_neg" required>
+                            <label class="blood-group-label" for="a_neg">A-</label>
+                        </div>
+                        <div class="blood-group-option">
+                            <input type="radio" name="bloodgroup" value="B+" id="b_pos" required>
+                            <label class="blood-group-label" for="b_pos">B+</label>
+                        </div>
+                        <div class="blood-group-option">
+                            <input type="radio" name="bloodgroup" value="B-" id="b_neg" required>
+                            <label class="blood-group-label" for="b_neg">B-</label>
+                        </div>
+                        <div class="blood-group-option">
+                            <input type="radio" name="bloodgroup" value="AB+" id="ab_pos" required>
+                            <label class="blood-group-label" for="ab_pos">AB+</label>
+                        </div>
+                        <div class="blood-group-option">
+                            <input type="radio" name="bloodgroup" value="AB-" id="ab_neg" required>
+                            <label class="blood-group-label" for="ab_neg">AB-</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="unit">Blood Volume Required (ml)</label>
+                    {% render_field request_form.unit|attr:'required:true' class="form-input" id="unit" placeholder="Enter volume in milliliters (e.g., 450)" %}
+                </div>
+
+                <div class="button-container">
+                    <button class="submit-button" type="submit">
+                        <span>Submit Request</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add form validation and enhancement
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const submitButton = document.querySelector('.submit-button');
+        const inputs = document.querySelectorAll('.form-input');
+
+        // Add real-time validation
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                if (this.value.trim()) {
+                    this.classList.add('success');
+                    this.classList.remove('error');
+                } else {
+                    this.classList.add('error');
+                    this.classList.remove('success');
+                }
+            });
+
+            input.addEventListener('input', function() {
+                this.classList.remove('error', 'success');
+            });
+        });
+
+        // Add loading state to submit button
+        form.addEventListener('submit', function() {
+            submitButton.classList.add('loading');
+            submitButton.innerHTML = '<span>Processing Request...</span>';
+        });
+    });
+</script>
+
+{% endblock content %}

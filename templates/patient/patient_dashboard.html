@@ -1,0 +1,263 @@
+{% extends 'patient/patientbase.html' %}
+{% block content %}
+<head>
+    <style>
+        .dashboard-section {
+            padding: 40px 0;
+            background: #f8f9fa;
+        }
+
+        .stats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-header h2 {
+            color: #e74c3c;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .section-header p {
+            color: #6c757d;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--card-color);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            border-color: var(--card-color);
+        }
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-card.requests-made {
+            --card-color: #1e88e5;
+        }
+
+        .stat-card.requests-pending {
+            --card-color: #efb000;
+        }
+
+        .stat-card.requests-approved {
+            --card-color: #28a745;
+        }
+
+        .stat-card.requests-rejected {
+            --card-color: #e74c3c;
+        }
+
+        .stat-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            position: relative;
+        }
+
+        .requests-made .stat-icon {
+            background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%);
+        }
+
+        .requests-pending .stat-icon {
+            background: linear-gradient(135deg, #efb000 0%, #f57c00 100%);
+        }
+
+        .requests-approved .stat-icon {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+        }
+
+        .requests-rejected .stat-icon {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .stat-icon i {
+            font-size: 2.5rem;
+            color: white;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--card-color);
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .stat-description {
+            font-size: 0.95rem;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+
+        /* Pulse animation for pending requests */
+        .requests-pending .stat-icon {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 10px 30px rgba(239, 176, 0, 0.3); }
+            50% { box-shadow: 0 10px 30px rgba(239, 176, 0, 0.6); }
+            100% { box-shadow: 0 10px 30px rgba(239, 176, 0, 0.3); }
+        }
+
+        /* Success glow for approved requests */
+        .requests-approved .stat-icon {
+            animation: successGlow 3s infinite;
+        }
+
+        @keyframes successGlow {
+            0%, 100% { box-shadow: 0 10px 30px rgba(40, 167, 69, 0.3); }
+            50% { box-shadow: 0 10px 30px rgba(40, 167, 69, 0.5); }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .section-header h2 {
+                font-size: 2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .stat-card {
+                padding: 30px 20px;
+            }
+
+            .stat-number {
+                font-size: 2.5rem;
+            }
+        }
+
+        /* Additional visual enhancements */
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid var(--card-color);
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .stat-card:hover::after {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<div class="dashboard-section">
+    <div class="stats-container">
+        <div class="section-header">
+            <h2>Your Request Dashboard</h2>
+            <p>Track your blood requests and monitor their status. Your health journey is important to us, and we're here to support you every step of the way.</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card requests-made">
+                <div class="stat-icon">
+                    <i class="fa fa-user-plus"></i>
+                </div>
+                <div class="stat-number">{{requestmade}}</div>
+                <div class="stat-label">Requests Made</div>
+                <div class="stat-description">Total number of blood requests you have submitted to our system</div>
+            </div>
+
+            <div class="stat-card requests-pending">
+                <div class="stat-icon">
+                    <i class="fas fa-sync"></i>
+                </div>
+                <div class="stat-number">{{requestpending}}</div>
+                <div class="stat-label">Pending Requests</div>
+                <div class="stat-description">Requests currently being processed and awaiting approval</div>
+            </div>
+
+            <div class="stat-card requests-approved">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-number">{{requestapproved}}</div>
+                <div class="stat-label">Approved Requests</div>
+                <div class="stat-description">Successfully approved requests ready for blood collection</div>
+            </div>
+
+            <div class="stat-card requests-rejected">
+                <div class="stat-icon">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="stat-number">{{requestrejected}}</div>
+                <div class="stat-label">Rejected Requests</div>
+                <div class="stat-description">Requests that couldn't be fulfilled due to various factors</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

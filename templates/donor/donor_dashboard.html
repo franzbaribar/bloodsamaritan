@@ -1,0 +1,503 @@
+{% extends 'donor/donorbase.html' %}
+{% block content %}
+
+<head>
+    <style>
+        .donor-dashboard-section {
+            padding: 80px 0;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .donor-dashboard-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(circle at 2px 2px, rgba(229, 62, 62, 0.03) 1px, transparent 0);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .dashboard-header::before {
+            content: '🩸';
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        .dashboard-header h2 {
+            color: #e53e3e;
+            font-size: 3.2rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .dashboard-header h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, #e53e3e, #ff6b6b);
+            border-radius: 2px;
+        }
+
+        .dashboard-header p {
+            color: #718096;
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.8;
+            font-weight: 400;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-top: 50px;
+        }
+
+        .donor-stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 50px 35px;
+            text-align: center;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.08);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(229, 62, 62, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .donor-stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: var(--card-gradient);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+            border-radius: 24px 24px 0 0;
+        }
+
+        .donor-stat-card:hover {
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: 0 35px 90px rgba(229, 62, 62, 0.15);
+            border-color: var(--card-primary);
+        }
+
+        .donor-stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .donor-stat-card.requests-made {
+            --card-primary: #e53e3e;
+            --card-gradient: linear-gradient(90deg, #e53e3e, #ff6b6b);
+            --card-light: rgba(229, 62, 62, 0.1);
+        }
+
+        .donor-stat-card.requests-pending {
+            --card-primary: #ed8936;
+            --card-gradient: linear-gradient(90deg, #ed8936, #fbb041);
+            --card-light: rgba(237, 137, 54, 0.1);
+        }
+
+        .donor-stat-card.requests-approved {
+            --card-primary: #48bb78;
+            --card-gradient: linear-gradient(90deg, #48bb78, #68d391);
+            --card-light: rgba(72, 187, 120, 0.1);
+        }
+
+        .donor-stat-card.requests-rejected {
+            --card-primary: #f56565;
+            --card-gradient: linear-gradient(90deg, #f56565, #fc8181);
+            --card-light: rgba(245, 101, 101, 0.1);
+        }
+
+        .donor-stat-icon {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 35px;
+            position: relative;
+            background: var(--card-light);
+            border: 3px solid var(--card-light);
+            transition: all 0.5s ease;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .donor-stat-card:hover .donor-stat-icon {
+            background: var(--card-gradient);
+            border-color: var(--card-primary);
+            transform: rotate(15deg) scale(1.15);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        .donor-stat-icon i {
+            font-size: 3.2rem;
+            color: var(--card-primary);
+            transition: all 0.5s ease;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .donor-stat-card:hover .donor-stat-icon i {
+            color: white;
+            transform: scale(1.1);
+            animation-play-state: paused;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .donor-stat-number {
+            font-size: 4rem;
+            font-weight: 900;
+            color: var(--card-primary);
+            margin-bottom: 20px;
+            line-height: 1;
+            transition: all 0.4s ease;
+            background: var(--card-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+        }
+
+        .donor-stat-number::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 2px;
+            background: var(--card-primary);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .donor-stat-card:hover .donor-stat-number::after {
+            opacity: 1;
+            width: 60px;
+        }
+
+        .donor-stat-label {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 15px;
+            transition: color 0.3s ease;
+            line-height: 1.3;
+        }
+
+        .donor-stat-card:hover .donor-stat-label {
+            color: var(--card-primary);
+        }
+
+        .donor-stat-description {
+            font-size: 1rem;
+            color: #718096;
+            line-height: 1.6;
+            font-weight: 400;
+            opacity: 0.8;
+        }
+
+        /* Enhanced animations for different card types */
+        .requests-pending .donor-stat-icon {
+            animation: pulse-donor 3s infinite;
+        }
+
+        @keyframes pulse-donor {
+            0% { 
+                box-shadow: 0 15px 35px rgba(237, 137, 54, 0.2);
+                background: rgba(237, 137, 54, 0.1);
+            }
+            50% { 
+                box-shadow: 0 15px 35px rgba(237, 137, 54, 0.4), 0 0 0 25px rgba(237, 137, 54, 0);
+                background: rgba(237, 137, 54, 0.15);
+            }
+            100% { 
+                box-shadow: 0 15px 35px rgba(237, 137, 54, 0.2);
+                background: rgba(237, 137, 54, 0.1);
+            }
+        }
+
+        .requests-approved .donor-stat-icon {
+            animation: success-glow 4s infinite;
+        }
+
+        @keyframes success-glow {
+            0%, 100% { 
+                box-shadow: 0 15px 35px rgba(72, 187, 120, 0.2);
+            }
+            50% { 
+                box-shadow: 0 15px 35px rgba(72, 187, 120, 0.4), 0 0 0 20px rgba(72, 187, 120, 0);
+            }
+        }
+
+        .requests-made .donor-stat-icon {
+            animation: heartbeat 3s infinite;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            14% { transform: scale(1.1); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.1); }
+            70% { transform: scale(1); }
+        }
+
+        /* Donor motivation section */
+        .donor-motivation {
+            background: linear-gradient(135deg, #e53e3e, #ff6b6b);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            color: white;
+            margin-top: 60px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .donor-motivation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .donor-motivation-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .donor-motivation h3 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+        }
+
+        .donor-motivation p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Badge decorations */
+        .donor-stat-card::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--card-primary);
+            opacity: 0.3;
+            transition: all 0.3s ease;
+        }
+
+        .donor-stat-card:hover::after {
+            opacity: 1;
+            transform: scale(1.8);
+            box-shadow: 0 0 0 5px var(--card-light);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 30px;
+            }
+            
+            .donor-stat-card {
+                padding: 40px 30px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .donor-dashboard-section {
+                padding: 60px 0;
+            }
+            
+            .dashboard-header h2 {
+                font-size: 2.5rem;
+            }
+
+            .dashboard-header p {
+                font-size: 1.1rem;
+                padding: 0 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 25px;
+                margin-top: 40px;
+            }
+
+            .donor-stat-card {
+                padding: 35px 25px;
+            }
+
+            .donor-stat-icon {
+                width: 90px;
+                height: 90px;
+            }
+
+            .donor-stat-icon i {
+                font-size: 2.5rem;
+            }
+
+            .donor-stat-number {
+                font-size: 3rem;
+            }
+
+            .donor-stat-label {
+                font-size: 1.3rem;
+            }
+
+            .donor-motivation {
+                margin: 40px 10px 0;
+                padding: 30px 20px;
+            }
+
+            .donor-motivation h3 {
+                font-size: 1.6rem;
+            }
+        }
+
+        /* Loading animation for numbers */
+        .donor-stat-number {
+            animation: count-up 1s ease-out;
+        }
+
+        @keyframes count-up {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Stagger animation for cards */
+        .donor-stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .donor-stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .donor-stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .donor-stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+        .donor-stat-card {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: slide-up 0.6s ease forwards;
+        }
+
+        @keyframes slide-up {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<div class="donor-dashboard-section">
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h2>Donor Dashboard</h2>
+            <p>Welcome to your donation journey. Thank you for being a lifesaver! Track your donation requests and see the impact you're making in saving lives.</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="donor-stat-card requests-made">
+                <div class="donor-stat-icon">
+                    <i class="fa fa-user-plus"></i>
+                </div>
+                <div class="donor-stat-number">{{requestmade}}</div>
+                <div class="donor-stat-label">Requests Made</div>
+                <div class="donor-stat-description">Total number of donation requests you've submitted to help save lives</div>
+            </div>
+
+            <div class="donor-stat-card requests-pending">
+                <div class="donor-stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="donor-stat-number">{{requestpending}}</div>
+                <div class="donor-stat-label">Pending Requests</div>
+                <div class="donor-stat-description">Donation requests currently under review by our medical team</div>
+            </div>
+
+            <div class="donor-stat-card requests-approved">
+                <div class="donor-stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="donor-stat-number">{{requestapproved}}</div>
+                <div class="donor-stat-label">Approved Requests</div>
+                <div class="donor-stat-description">Successfully approved donations ready for collection - you're a hero!</div>
+            </div>
+
+            <div class="donor-stat-card requests-rejected">
+                <div class="donor-stat-icon">
+                    <i class="fas fa-heart-broken"></i>
+                </div>
+                <div class="donor-stat-number">{{requestrejected}}</div>
+                <div class="donor-stat-label">Deferred Requests</div>
+                <div class="donor-stat-description">Requests deferred for medical safety - we value your wellbeing first</div>
+            </div>
+        </div>
+
+        <div class="donor-motivation">
+            <div class="donor-motivation-content">
+                <h3>🌟 You're Making a Difference! 🌟</h3>
+                <p>"Every drop counts, every donation saves lives. Your generosity brings hope to families and healing to those in need. Thank you for being a Blood Samaritan - a true hero in our community."</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
