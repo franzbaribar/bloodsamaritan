@@ -298,6 +298,55 @@
         margin-top: 0.5rem;
     }
     
+    /* Report Button Styling */
+    .report-section {
+        background: white;
+        border-radius: 25px;
+        padding: 2rem;
+        box-shadow: 0 10px 35px rgba(0,0,0,0.1);
+        margin-top: 3rem;
+        text-align: center;
+        border-top: 5px solid #17a2b8;
+    }
+    
+    .report-btn {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+        border: none;
+        padding: 1rem 2.5rem;
+        border-radius: 15px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+        min-width: 250px;
+        margin: 1rem 0;
+    }
+    
+    .report-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(23, 162, 184, 0.4);
+        background: linear-gradient(135deg, #138496 0%, #11707f 100%);
+    }
+    
+    /* Visualization Container */
+    .visualization-container {
+        margin: 2rem 0;
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-radius: 15px;
+        display: none;
+    }
+    
+    .chart-container {
+        width: 100%;
+        height: 300px;
+        margin: 1.5rem 0;
+    }
+    
     /* Responsive design */
     @media (max-width: 768px) {
         .page-title {
@@ -461,6 +510,23 @@
         </div>
     </div>
 
+    <!-- Report Generation Section -->
+    <div class="report-section">
+        <h3 class="section-title">📊 Generate Blood Stock Report</h3>
+        <p>Create a comprehensive PDF report with data visualization and analysis</p>
+        
+        <button id="generateReportBtn" class="report-btn">
+            📋 Generate Full Report
+        </button>
+        
+        <div class="visualization-container" id="visualizationContainer">
+            <h4>Data Visualization Preview</h4>
+            <div class="chart-container">
+                <canvas id="bloodStockChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- Update Stock Section -->
     <div class="update-section">
         <h3 class="section-title">🔄 Update Blood Stock</h3>
@@ -494,5 +560,365 @@
         </form>
     </div>
 </div>
+
+<!-- Include jsPDF and Chart.js libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+    // Initialize jsPDF
+    const { jsPDF } = window.jspdf;
+    
+    // DOM elements
+    const generateReportBtn = document.getElementById('generateReportBtn');
+    const visualizationContainer = document.getElementById('visualizationContainer');
+    let bloodStockChart = null;
+    
+    // Function to get blood stock data from the page
+    function getBloodStockData() {
+        return {
+            'A+': parseInt('{{A1.unit}}' || 0),
+            'B+': parseInt('{{B1.unit}}' || 0),
+            'O+': parseInt('{{O1.unit}}' || 0),
+            'AB+': parseInt('{{AB1.unit}}' || 0),
+            'A-': parseInt('{{A2.unit}}' || 0),
+            'B-': parseInt('{{B2.unit}}' || 0),
+            'O-': parseInt('{{O2.unit}}' || 0),
+            'AB-': parseInt('{{AB2.unit}}' || 0)
+        };
+    }
+    
+    // Function to create chart visualization
+    function createBloodStockChart() {
+        const data = getBloodStockData();
+        const ctx = document.getElementById('bloodStockChart').getContext('2d');
+        
+        if (bloodStockChart) {
+            bloodStockChart.destroy();
+        }
+        
+        bloodStockChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(data),
+                datasets: [{
+                    label: 'Blood Stock (ml)',
+                    data: Object.values(data),
+                    backgroundColor: [
+                        'rgba(220, 53, 69, 0.7)',
+                        'rgba(220, 53, 69, 0.7)',
+                        'rgba(220, 53, 69, 0.7)',
+                        'rgba(220, 53, 69, 0.7)',
+                        'rgba(40, 167, 69, 0.7)',
+                        'rgba(40, 167, 69, 0.7)',
+                        'rgba(40, 167, 69, 0.7)',
+                        'rgba(40, 167, 69, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgb(220, 53, 69)',
+                        'rgb(220, 53, 69)',
+                        'rgb(220, 53, 69)',
+                        'rgb(220, 53, 69)',
+                        'rgb(40, 167, 69)',
+                        'rgb(40, 167, 69)',
+                        'rgb(40, 167, 69)',
+                        'rgb(40, 167, 69)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Amount (ml)'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Current Blood Stock Levels',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        visualizationContainer.style.display = 'block';
+    }
+    
+    // Function to generate stock level interpretation
+    function generateStockInterpretation(data) {
+        let interpretation = "";
+        let criticalTypes = [];
+        let sufficientTypes = [];
+        let lowTypes = [];
+        
+        // Categorize blood types by stock level
+        Object.entries(data).forEach(([type, amount]) => {
+            if (amount < 200) {
+                criticalTypes.push(type);
+            } else if (amount < 500) {
+                lowTypes.push(type);
+            } else {
+                sufficientTypes.push(type);
+            }
+        });
+        
+        // Generate interpretation text
+        if (criticalTypes.length > 0) {
+            interpretation += `CRITICAL: The following blood types are critically low (below 200ml): ${criticalTypes.join(', ')}. Urgent donations needed.\n\n`;
+        }
+        
+        if (lowTypes.length > 0) {
+            interpretation += `LOW: These blood types need replenishment (200-500ml): ${lowTypes.join(', ')}. Consider organizing donation drives.\n\n`;
+        }
+        
+        if (sufficientTypes.length > 0) {
+            interpretation += `SUFFICIENT: These blood types have adequate supply (500ml+): ${sufficientTypes.join(', ')}. Maintain current donation efforts.\n\n`;
+        }
+        
+        // Add recommendations
+        interpretation += "RECOMMENDATIONS:\n";
+        if (criticalTypes.length > 0) {
+            interpretation += "- Prioritize donation campaigns for critical blood types\n";
+            interpretation += "- Contact regular donors with matching blood types\n";
+        }
+        
+        if (lowTypes.length > 0) {
+            interpretation += "- Schedule additional blood drives for low stock types\n";
+        }
+        
+        interpretation += "- Continue regular donation efforts for all blood types\n";
+        interpretation += "- Monitor stock levels weekly and adjust collection targets\n";
+        
+        return interpretation;
+    }
+    
+    // Function to generate and download the PDF report
+    async function generatePDFReport() {
+        // Show loading state
+        generateReportBtn.textContent = 'Generating Report...';
+        generateReportBtn.disabled = true;
+        
+        try {
+            const data = getBloodStockData();
+            const totalStock = Object.values(data).reduce((sum, amount) => sum + amount, 0);
+            
+            // Create PDF document
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            
+            // Add title
+            doc.setFontSize(20);
+            doc.setTextColor(40, 40, 40);
+            doc.text("BLOOD SAMARITAN - STOCK REPORT", pageWidth / 2, 20, { align: 'center' });
+            
+            // Add date
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 30, { align: 'center' });
+            
+            // Add summary section
+            doc.setFontSize(16);
+            doc.setTextColor(220, 53, 69);
+            doc.text("SUMMARY", 20, 45);
+            
+            doc.setFontSize(12);
+            doc.setTextColor(40, 40, 40);
+            doc.text(`Total Blood Stock: ${totalStock} ml`, 20, 55);
+            doc.text(`Number of Blood Types: 8`, 20, 65);
+            
+            // Add blood stock table
+            doc.setFontSize(16);
+            doc.setTextColor(220, 53, 69);
+            doc.text("DETAILED STOCK LEVELS", 20, 85);
+            
+            let yPosition = 95;
+            doc.setFontSize(10);
+            doc.setTextColor(40, 40, 40);
+            
+            // Table header
+            doc.setFillColor(220, 53, 69);
+            doc.setTextColor(255, 255, 255);
+            doc.rect(20, yPosition, 80, 10, 'F');
+            doc.rect(100, yPosition, 40, 10, 'F');
+            doc.rect(140, yPosition, 40, 10, 'F');
+            
+            doc.text("Blood Type", 30, yPosition + 7);
+            doc.text("Amount (ml)", 110, yPosition + 7);
+            doc.text("Status", 150, yPosition + 7);
+            
+            yPosition += 10;
+            
+            // Table rows
+            doc.setTextColor(40, 40, 40);
+            Object.entries(data).forEach(([type, amount]) => {
+                let status = amount < 200 ? "CRITICAL" : amount < 500 ? "LOW" : "SUFFICIENT";
+                let statusColor = amount < 200 ? [220, 53, 69] : amount < 500 ? [255, 193, 7] : [40, 167, 69];
+                
+                doc.setTextColor(40, 40, 40);
+                doc.text(type, 30, yPosition + 7);
+                doc.text(amount.toString(), 110, yPosition + 7);
+                
+                doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+                doc.text(status, 150, yPosition + 7);
+                
+                yPosition += 10;
+                
+                // Add new page if needed
+                if (yPosition > pageHeight - 50) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+            });
+            
+            // Add interpretation section
+            yPosition += 10;
+            if (yPosition > pageHeight - 100) {
+                doc.addPage();
+                yPosition = 20;
+            }
+            
+            doc.setFontSize(16);
+            doc.setTextColor(220, 53, 69);
+            doc.text("STOCK ANALYSIS & RECOMMENDATIONS", 20, yPosition);
+            
+            yPosition += 10;
+            doc.setFontSize(10);
+            doc.setTextColor(40, 40, 40);
+            
+            const interpretation = generateStockInterpretation(data);
+            const splitText = doc.splitTextToSize(interpretation, pageWidth - 40);
+            doc.text(splitText, 20, yPosition);
+            
+            // Add chart image if possible
+            try {
+                // Create a temporary chart for the PDF
+                const chartCanvas = document.createElement('canvas');
+                chartCanvas.width = 600;
+                chartCanvas.height = 400;
+                const chartCtx = chartCanvas.getContext('2d');
+                
+                // Create chart with white background for PDF
+                const tempChart = new Chart(chartCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(data),
+                        datasets: [{
+                            label: 'Blood Stock (ml)',
+                            data: Object.values(data),
+                            backgroundColor: [
+                                'rgba(220, 53, 69, 0.7)',
+                                'rgba(220, 53, 69, 0.7)',
+                                'rgba(220, 53, 69, 0.7)',
+                                'rgba(220, 53, 69, 0.7)',
+                                'rgba(40, 167, 69, 0.7)',
+                                'rgba(40, 167, 69, 0.7)',
+                                'rgba(40, 167, 69, 0.7)',
+                                'rgba(40, 167, 69, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgb(220, 53, 69)',
+                                'rgb(220, 53, 69)',
+                                'rgb(220, 53, 69)',
+                                'rgb(220, 53, 69)',
+                                'rgb(40, 167, 69)',
+                                'rgb(40, 167, 69)',
+                                'rgb(40, 167, 69)',
+                                'rgb(40, 167, 69)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Amount (ml)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Current Blood Stock Levels',
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+                
+                // Convert chart to image and add to PDF
+                const chartImage = tempChart.toBase64Image();
+                doc.addPage();
+                doc.setFontSize(16);
+                doc.setTextColor(220, 53, 69);
+                doc.text("BLOOD STOCK VISUALIZATION", 20, 20);
+                
+                doc.addImage(chartImage, 'PNG', 20, 30, 170, 0);
+                
+                // Clean up
+                tempChart.destroy();
+            } catch (error) {
+                console.error("Error adding chart to PDF:", error);
+            }
+            
+            // Add footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                doc.text("Blood Samaritan - Confidential Report", pageWidth - 20, pageHeight - 10, { align: 'right' });
+            }
+            
+            // Save the PDF
+            doc.save(`Blood_Stock_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+            
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            alert("Error generating report. Please try again.");
+        } finally {
+            // Reset button state
+            generateReportBtn.textContent = '📋 Generate Full Report';
+            generateReportBtn.disabled = false;
+        }
+    }
+    
+    // Event listeners
+    generateReportBtn.addEventListener('click', generatePDFReport);
+    
+    // Initialize chart on page load if there's data
+    document.addEventListener('DOMContentLoaded', function() {
+        const data = getBloodStockData();
+        const hasData = Object.values(data).some(amount => amount > 0);
+        
+        if (hasData) {
+            createBloodStockChart();
+        }
+    });
+</script>
 
 {% endblock content %}

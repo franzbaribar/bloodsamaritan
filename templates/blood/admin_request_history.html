@@ -192,6 +192,54 @@
          box-shadow: 0 2px 10px rgba(220, 53, 69, 0.1);
      }
      
+     /* Report Section Styling */
+     .report-section {
+         background: #ffffff;
+         border-radius: 20px;
+         padding: 2rem;
+         box-shadow: 0 10px 35px rgba(0,0,0,0.1);
+         margin: 2rem 0;
+         text-align: center;
+         border-top: 5px solid #17a2b8;
+     }
+     
+     .report-btn {
+         background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+         color: white;
+         border: none;
+         padding: 1rem 2.5rem;
+         border-radius: 15px;
+         font-size: 1.1rem;
+         font-weight: 600;
+         cursor: pointer;
+         transition: all 0.3s ease;
+         text-transform: uppercase;
+         letter-spacing: 0.5px;
+         box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+         min-width: 250px;
+         margin: 1rem 0;
+     }
+     
+     .report-btn:hover {
+         transform: translateY(-3px);
+         box-shadow: 0 8px 25px rgba(23, 162, 184, 0.4);
+         background: linear-gradient(135deg, #138496 0%, #11707f 100%);
+     }
+     
+     .visualization-container {
+         margin: 2rem 0;
+         padding: 1.5rem;
+         background: #f8f9fa;
+         border-radius: 15px;
+         display: none;
+     }
+     
+     .chart-container {
+         width: 100%;
+         height: 300px;
+         margin: 1.5rem 0;
+     }
+     
      /* Responsive design */
      @media (max-width: 768px) {
          .stats-cards {
@@ -209,6 +257,12 @@
          .enhanced-table thead th,
          .enhanced-table tbody td {
              padding: 0.75rem 0.5rem;
+         }
+         
+         .report-btn {
+             padding: 0.8rem 1.5rem;
+             font-size: 1rem;
+             min-width: 200px;
          }
      }
      
@@ -238,12 +292,38 @@
 </div>
 
 <div class="container">
+    <!-- Report Generation Section -->
+    <div class="report-section">
+        <h3 class="table-title">📊 Generate Request Report</h3>
+        <p>Create a comprehensive PDF report with blood request statistics and analysis</p>
+        
+        <button id="generateReportBtn" class="report-btn">
+            📋 Generate Request Report
+        </button>
+        
+        <div class="visualization-container" id="visualizationContainer">
+            <h4>Request Statistics Preview</h4>
+            <div class="chart-container">
+                <canvas id="requestStatsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- Error Message -->
     {% if message %}
     <div class="error-message">
         <strong>⚠️ Notice:</strong> {{message}}
     </div>
     {% endif %}
+
+    <!-- Statistics Cards -->
+    <div class="stats-cards">
+        <div class="stat-card">
+            <div class="stat-number">{{ requests|length }}</div>
+            <div class="stat-label">Total Requests</div>
+        </div>
+        {% comment %} Additional stats can be added here based on status counts {% endcomment %}
+    </div>
 
     <!-- Main Table Container -->
     <div class="table-container">
@@ -288,5 +368,343 @@
         </div>
     </div>
 </div>
+
+<!-- Include jsPDF and Chart.js libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+    // Initialize jsPDF
+    const { jsPDF } = window.jspdf;
+    
+    // DOM elements
+    const generateReportBtn = document.getElementById('generateReportBtn');
+    const visualizationContainer = document.getElementById('visualizationContainer');
+    let requestStatsChart = null;
+    
+    // Function to get request data from the page
+    function getRequestData() {
+        const requests = [];
+        const tableRows = document.querySelectorAll('.enhanced-table tbody tr');
+        
+        tableRows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 8) {
+                requests.push({
+                    patient_name: cells[0].textContent.trim(),
+                    patient_age: parseInt(cells[1].textContent.trim()) || 0,
+                    reason: cells[2].textContent.trim(),
+                    bloodgroup: cells[3].textContent.trim(),
+                    unit: parseInt(cells[4].textContent.trim()) || 0,
+                    date: cells[5].textContent.trim(),
+                    status: cells[6].textContent.includes('Approved') ? 'Approved' : 'Rejected',
+                    stock_impact: cells[7].textContent.trim()
+                });
+            }
+        });
+        
+        return requests;
+    }
+    
+    // Function to calculate request statistics
+    function calculateRequestStats(requests) {
+        const stats = {
+            total: requests.length,
+            approved: 0,
+            rejected: 0,
+            totalUnits: 0,
+            approvedUnits: 0,
+            byBloodGroup: {},
+            byStatus: {
+                'Approved': 0,
+                'Rejected': 0
+            }
+        };
+        
+        requests.forEach(request => {
+            // Count by status
+            if (request.status === 'Approved') {
+                stats.approved++;
+                stats.approvedUnits += request.unit;
+            } else {
+                stats.rejected++;
+            }
+            
+            stats.totalUnits += request.unit;
+            
+            // Count by blood group
+            if (!stats.byBloodGroup[request.bloodgroup]) {
+                stats.byBloodGroup[request.bloodgroup] = {
+                    count: 0,
+                    units: 0
+                };
+            }
+            stats.byBloodGroup[request.bloodgroup].count++;
+            stats.byBloodGroup[request.bloodgroup].units += request.unit;
+            
+            // Count by status
+            stats.byStatus[request.status]++;
+        });
+        
+        return stats;
+    }
+    
+    // Function to create chart visualization
+    function createRequestStatsChart() {
+        const requests = getRequestData();
+        if (requests.length === 0) return;
+        
+        const stats = calculateRequestStats(requests);
+        const ctx = document.getElementById('requestStatsChart').getContext('2d');
+        
+        if (requestStatsChart) {
+            requestStatsChart.destroy();
+        }
+        
+        // Prepare data for the chart
+        const bloodGroups = Object.keys(stats.byBloodGroup);
+        const bloodGroupCounts = bloodGroups.map(group => stats.byBloodGroup[group].count);
+        const bloodGroupUnits = bloodGroups.map(group => stats.byBloodGroup[group].units);
+        
+        requestStatsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: bloodGroups,
+                datasets: [
+                    {
+                        label: 'Number of Requests',
+                        data: bloodGroupCounts,
+                        backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                        borderColor: 'rgb(220, 53, 69)',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Total Units (ml)',
+                        data: bloodGroupUnits,
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: 'rgb(40, 167, 69)',
+                        borderWidth: 1,
+                        type: 'line',
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Requests'
+                        },
+                        position: 'left'
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Total Units (ml)'
+                        },
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Requests by Blood Group',
+                        font: {
+                            size: 16
+                        }
+                    }
+                }
+            }
+        });
+        
+        visualizationContainer.style.display = 'block';
+    }
+    
+    // Function to generate request interpretation
+    function generateRequestInterpretation(stats) {
+        let interpretation = "";
+        
+        interpretation += `BLOOD REQUEST ANALYSIS:\n\n`;
+        interpretation += `Total Requests: ${stats.total}\n`;
+        interpretation += `Approved: ${stats.approved} (${((stats.approved/stats.total)*100).toFixed(1)}%)\n`;
+        interpretation += `Rejected: ${stats.rejected} (${((stats.rejected/stats.total)*100).toFixed(1)}%)\n\n`;
+        
+        interpretation += `Total Blood Units Requested: ${stats.totalUnits} ml\n`;
+        interpretation += `Approved Units: ${stats.approvedUnits} ml\n\n`;
+        
+        // Blood group analysis
+        interpretation += `BLOOD GROUP DISTRIBUTION:\n`;
+        Object.entries(stats.byBloodGroup).forEach(([group, data]) => {
+            interpretation += `${group}: ${data.count} requests, ${data.units} ml\n`;
+        });
+        
+        interpretation += `\nRECOMMENDATIONS:\n`;
+        
+        // Find the blood group with most requests
+        let mostRequestedGroup = '';
+        let maxRequests = 0;
+        Object.entries(stats.byBloodGroup).forEach(([group, data]) => {
+            if (data.count > maxRequests) {
+                maxRequests = data.count;
+                mostRequestedGroup = group;
+            }
+        });
+        
+        interpretation += `- ${mostRequestedGroup} is the most requested blood type (${maxRequests} requests)\n`;
+        
+        if (stats.rejected > 0) {
+            interpretation += `- Analyze reasons for ${stats.rejected} rejected requests to improve approval process\n`;
+        }
+        
+        interpretation += `- Monitor inventory levels for frequently requested blood types\n`;
+        interpretation += `- Consider targeted donation drives for high-demand blood groups\n`;
+        
+        return interpretation;
+    }
+    
+    // Function to generate and download the PDF report
+    async function generatePDFReport() {
+        // Show loading state
+        generateReportBtn.textContent = 'Generating Report...';
+        generateReportBtn.disabled = true;
+        
+        try {
+            const requests = getRequestData();
+            if (requests.length === 0) {
+                alert("No request data available to generate report.");
+                return;
+            }
+            
+            const stats = calculateRequestStats(requests);
+            
+            // Create PDF document
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            
+            // Add title
+            doc.setFontSize(20);
+            doc.setTextColor(40, 40, 40);
+            doc.text("BLOOD SAMARITAN - REQUEST REPORT", pageWidth / 2, 20, { align: 'center' });
+            
+            // Add date
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 30, { align: 'center' });
+            
+            // Add summary section
+            doc.setFontSize(16);
+            doc.setTextColor(220, 53, 69);
+            doc.text("REQUEST SUMMARY", 20, 45);
+            
+            doc.setFontSize(12);
+            doc.setTextColor(40, 40, 40);
+            doc.text(`Total Requests: ${stats.total}`, 20, 55);
+            doc.text(`Approved: ${stats.approved} (${((stats.approved/stats.total)*100).toFixed(1)}%)`, 20, 65);
+            doc.text(`Rejected: ${stats.rejected} (${((stats.rejected/stats.total)*100).toFixed(1)}%)`, 20, 75);
+            doc.text(`Total Blood Units Requested: ${stats.totalUnits} ml`, 20, 85);
+            doc.text(`Approved Units: ${stats.approvedUnits} ml`, 20, 95);
+            
+            // Add blood group distribution table
+            let yPosition = 110;
+            doc.setFontSize(16);
+            doc.setTextColor(220, 53, 69);
+            doc.text("BLOOD GROUP DISTRIBUTION", 20, yPosition);
+            
+            yPosition += 10;
+            doc.setFontSize(10);
+            
+            // Table header
+            doc.setFillColor(220, 53, 69);
+            doc.setTextColor(255, 255, 255);
+            doc.rect(20, yPosition, 40, 10, 'F');
+            doc.rect(60, yPosition, 40, 10, 'F');
+            doc.rect(100, yPosition, 40, 10, 'F');
+            
+            doc.text("Blood Group", 30, yPosition + 7);
+            doc.text("Requests", 70, yPosition + 7);
+            doc.text("Units (ml)", 110, yPosition + 7);
+            
+            yPosition += 10;
+            
+            // Table rows
+            doc.setTextColor(40, 40, 40);
+            Object.entries(stats.byBloodGroup).forEach(([group, data]) => {
+                doc.text(group, 30, yPosition + 7);
+                doc.text(data.count.toString(), 70, yPosition + 7);
+                doc.text(data.units.toString(), 110, yPosition + 7);
+                
+                yPosition += 10;
+                
+                // Add new page if needed
+                if (yPosition > pageHeight - 50) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+            });
+            
+            // Add interpretation section
+            yPosition += 10;
+            if (yPosition > pageHeight - 100) {
+                doc.addPage();
+                yPosition = 20;
+            }
+            
+            doc.setFontSize(16);
+            doc.setTextColor(220, 53, 69);
+            doc.text("ANALYSIS & RECOMMENDATIONS", 20, yPosition);
+            
+            yPosition += 10;
+            doc.setFontSize(10);
+            doc.setTextColor(40, 40, 40);
+            
+            const interpretation = generateRequestInterpretation(stats);
+            const splitText = doc.splitTextToSize(interpretation, pageWidth - 40);
+            doc.text(splitText, 20, yPosition);
+            
+            // Add footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                doc.text("Blood Samaritan - Confidential Report", pageWidth - 20, pageHeight - 10, { align: 'right' });
+            }
+            
+            // Save the PDF
+            doc.save(`Blood_Request_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+            
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            alert("Error generating report. Please try again.");
+        } finally {
+            // Reset button state
+            generateReportBtn.textContent = '📋 Generate Request Report';
+            generateReportBtn.disabled = false;
+        }
+    }
+    
+    // Event listeners
+    generateReportBtn.addEventListener('click', generatePDFReport);
+    
+    // Initialize chart on page load if there's data
+    document.addEventListener('DOMContentLoaded', function() {
+        const requests = getRequestData();
+        if (requests.length > 0) {
+            createRequestStatsChart();
+        }
+    });
+</script>
 
 {% endblock content %}

@@ -222,7 +222,7 @@
     letter-spacing: 0.5px;
     transition: all 0.3s ease;
     box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
-    text-decoration: none;
+    text-decoration: nil;
     display: inline-block;
 }
 
@@ -230,7 +230,7 @@
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
     color: white;
-    text-decoration: none;
+    text-decoration: nil;
 }
 
 .btn-reject {
@@ -245,7 +245,7 @@
     letter-spacing: 0.5px;
     transition: all 0.3s ease;
     box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
-    text-decoration: none;
+    text-decoration: nil;
     display: inline-block;
 }
 
@@ -253,7 +253,7 @@
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
     color: white;
-    text-decoration: none;
+    text-decoration: nil;
 }
 
 .stock-label {
@@ -364,6 +364,54 @@
     opacity: 0.8;
 }
 
+/* Report Section Styling */
+.report-section {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.1);
+    margin: 2rem 0;
+    text-align: center;
+    border-top: 5px solid #17a2b8;
+}
+
+.report-btn {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: white;
+    border: none;
+    padding: 1rem 2.5rem;
+    border-radius: 15px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+    min-width: 250px;
+    margin: 1rem 0;
+}
+
+.report-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(23, 162, 184, 0.4);
+    background: linear-gradient(135deg, #138496 0%, #11707f 100%);
+}
+
+.visualization-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 15px;
+    display: none;
+}
+
+.chart-container {
+    width: 100%;
+    height: 300px;
+    margin: 1.5rem 0;
+}
+
 @media (max-width: 768px) {
     .page-title {
         font-size: 2rem;
@@ -442,6 +490,23 @@
     <div class="container">
         <h1 class="page-title">Blood Donation Management</h1>
         <p class="page-subtitle">Review, approve, and manage blood donation requests</p>
+        
+        <!-- Report Generation Section -->
+        <div class="report-section">
+            <h3 class="section-title">📊 Generate Donation Report</h3>
+            <p>Create a comprehensive PDF report with donation statistics and analysis</p>
+            
+            <button id="generateReportBtn" class="report-btn">
+                📋 Generate Donation Report
+            </button>
+            
+            <div class="visualization-container" id="visualizationContainer">
+                <h4>Donation Statistics Preview</h4>
+                <div class="chart-container">
+                    <canvas id="donationStatsChart"></canvas>
+                </div>
+            </div>
+        </div>
         
         <!-- Donation Statistics -->
         <div class="donations-stats">
@@ -535,5 +600,351 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Include jsPDF and Chart.js libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+    // Initialize jsPDF
+    const { jsPDF } = window.jspdf;
+    
+    // DOM elements
+    const generateReportBtn = document.getElementById('generateReportBtn');
+    const visualizationContainer = document.getElementById('visualizationContainer');
+    let donationStatsChart = null;
+    
+    // Function to get donation data from the page
+    function getDonationData() {
+        const donations = [];
+        const tableRows = document.querySelectorAll('.donations-table tbody tr');
+        
+        tableRows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 8) {
+                donations.push({
+                    donor: cells[0].textContent.trim(),
+                    disease: cells[1].textContent.trim(),
+                    age: parseInt(cells[2].textContent.trim()) || 0,
+                    bloodgroup: cells[3].textContent.trim(),
+                    unit: parseInt(cells[4].textContent.trim()) || 0,
+                    date: cells[5].textContent.trim(),
+                    status: cells[6].textContent.trim()
+                });
+            }
+        });
+        
+        return donations;
+    }
+    
+    // Function to calculate donation statistics
+    function calculateDonationStats(donations) {
+        const stats = {
+            total: donations.length,
+            approved: 0,
+            pending: 0,
+            rejected: 0,
+            totalUnits: 0,
+            approvedUnits: 0,
+            byBloodGroup: {},
+            byStatus: {
+                'Approved': 0,
+                'Pending': 0,
+                'Rejected': 0
+            }
+        };
+        
+        donations.forEach(donation => {
+            // Count by status
+            if (donation.status === 'Approved') {
+                stats.approved++;
+                stats.approvedUnits += donation.unit;
+            } else if (donation.status === 'Pending') {
+                stats.pending++;
+            } else if (donation.status === 'Rejected') {
+                stats.rejected++;
+            }
+            
+            stats.totalUnits += donation.unit;
+            
+            // Count by blood group
+            if (!stats.byBloodGroup[donation.bloodgroup]) {
+                stats.byBloodGroup[donation.bloodgroup] = {
+                    count: 0,
+                    units: 0
+                };
+            }
+            stats.byBloodGroup[donation.bloodgroup].count++;
+            stats.byBloodGroup[donation.bloodgroup].units += donation.unit;
+            
+            // Count by status
+            stats.byStatus[donation.status]++;
+        });
+        
+        return stats;
+    }
+    
+    // Function to create chart visualization
+    function createDonationStatsChart() {
+        const donations = getDonationData();
+        if (donations.length === 0) return;
+        
+        const stats = calculateDonationStats(donations);
+        const ctx = document.getElementById('donationStatsChart').getContext('2d');
+        
+        if (donationStatsChart) {
+            donationStatsChart.destroy();
+        }
+        
+        // Prepare data for the chart
+        const bloodGroups = Object.keys(stats.byBloodGroup);
+        const bloodGroupCounts = bloodGroups.map(group => stats.byBloodGroup[group].count);
+        const bloodGroupUnits = bloodGroups.map(group => stats.byBloodGroup[group].units);
+        
+        donationStatsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: bloodGroups,
+                datasets: [
+                    {
+                        label: 'Number of Donations',
+                        data: bloodGroupCounts,
+                        backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                        borderColor: 'rgb(220, 53, 69)',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Total Units (ml)',
+                        data: bloodGroupUnits,
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: 'rgb(40, 167, 69)',
+                        borderWidth: 1,
+                        type: 'line',
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Donations'
+                        },
+                        position: 'left'
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Total Units (ml)'
+                        },
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Donations by Blood Group',
+                        font: {
+                            size: 16
+                        }
+                    }
+                }
+            }
+        });
+        
+        visualizationContainer.style.display = 'block';
+    }
+    
+    // Function to generate donation interpretation
+    function generateDonationInterpretation(stats) {
+        let interpretation = "";
+        
+        interpretation += `DONATION ANALYSIS:\n\n`;
+        interpretation += `Total Donations: ${stats.total}\n`;
+        interpretation += `Approved: ${stats.approved} (${((stats.approved/stats.total)*100).toFixed(1)}%)\n`;
+        interpretation += `Pending: ${stats.pending} (${((stats.pending/stats.total)*100).toFixed(1)}%)\n`;
+        interpretation += `Rejected: ${stats.rejected} (${((stats.rejected/stats.total)*100).toFixed(1)}%)\n\n`;
+        
+        interpretation += `Total Blood Units Collected: ${stats.totalUnits} ml\n`;
+        interpretation += `Approved Units: ${stats.approvedUnits} ml\n\n`;
+        
+        // Blood group analysis
+        interpretation += `BLOOD GROUP DISTRIBUTION:\n`;
+        Object.entries(stats.byBloodGroup).forEach(([group, data]) => {
+            interpretation += `${group}: ${data.count} donations, ${data.units} ml\n`;
+        });
+        
+        interpretation += `\nRECOMMENDATIONS:\n`;
+        
+        if (stats.pending > 0) {
+            interpretation += `- Review ${stats.pending} pending donation requests promptly\n`;
+        }
+        
+        if (stats.rejected > 0) {
+            interpretation += `- Analyze reasons for ${stats.rejected} rejected donations to improve screening\n`;
+        }
+        
+        // Find the blood group with most donations
+        let mostCommonGroup = '';
+        let maxDonations = 0;
+        Object.entries(stats.byBloodGroup).forEach(([group, data]) => {
+            if (data.count > maxDonations) {
+                maxDonations = data.count;
+                mostCommonGroup = group;
+            }
+        });
+        
+        interpretation += `- ${mostCommonGroup} is the most donated blood type (${maxDonations} donations)\n`;
+        interpretation += `- Continue promoting donations for all blood types\n`;
+        interpretation += `- Consider targeted campaigns for less common blood types\n`;
+        
+        return interpretation;
+    }
+    
+    // Function to generate and download the PDF report
+    async function generatePDFReport() {
+        // Show loading state
+        generateReportBtn.textContent = 'Generating Report...';
+        generateReportBtn.disabled = true;
+        
+        try {
+            const donations = getDonationData();
+            if (donations.length === 0) {
+                alert("No donation data available to generate report.");
+                return;
+            }
+            
+            const stats = calculateDonationStats(donations);
+            
+            // Create PDF document
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            
+            // Add title
+            doc.setFontSize(20);
+            doc.setTextColor(40, 40, 40);
+            doc.text("BLOOD SAMARITAN - DONATION REPORT", pageWidth / 2, 20, { align: 'center' });
+            
+            // Add date
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 30, { align: 'center' });
+            
+            // Add summary section
+            doc.setFontSize(16);
+            doc.setTextColor(220, 53, 69);
+            doc.text("DONATION SUMMARY", 20, 45);
+            
+            doc.setFontSize(12);
+            doc.setTextColor(40, 40, 40);
+            doc.text(`Total Donations: ${stats.total}`, 20, 55);
+            doc.text(`Approved: ${stats.approved} (${((stats.approved/stats.total)*100).toFixed(1)}%)`, 20, 65);
+            doc.text(`Pending: ${stats.pending} (${((stats.pending/stats.total)*100).toFixed(1)}%)`, 20, 75);
+            doc.text(`Rejected: ${stats.rejected} (${((stats.rejected/stats.total)*100).toFixed(1)}%)`, 20, 85);
+            doc.text(`Total Blood Units: ${stats.totalUnits} ml`, 20, 95);
+            doc.text(`Approved Units: ${stats.approvedUnits} ml`, 20, 105);
+            
+            // Add blood group distribution table
+            let yPosition = 120;
+            doc.setFontSize(16);
+            doc.setTextColor(220, 53, 69);
+            doc.text("BLOOD GROUP DISTRIBUTION", 20, yPosition);
+            
+            yPosition += 10;
+            doc.setFontSize(10);
+            
+            // Table header
+            doc.setFillColor(220, 53, 69);
+            doc.setTextColor(255, 255, 255);
+            doc.rect(20, yPosition, 40, 10, 'F');
+            doc.rect(60, yPosition, 40, 10, 'F');
+            doc.rect(100, yPosition, 40, 10, 'F');
+            
+            doc.text("Blood Group", 30, yPosition + 7);
+            doc.text("Donations", 70, yPosition + 7);
+            doc.text("Units (ml)", 110, yPosition + 7);
+            
+            yPosition += 10;
+            
+            // Table rows
+            doc.setTextColor(40, 40, 40);
+            Object.entries(stats.byBloodGroup).forEach(([group, data]) => {
+                doc.text(group, 30, yPosition + 7);
+                doc.text(data.count.toString(), 70, yPosition + 7);
+                doc.text(data.units.toString(), 110, yPosition + 7);
+                
+                yPosition += 10;
+                
+                // Add new page if needed
+                if (yPosition > pageHeight - 50) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+            });
+            
+            // Add interpretation section
+            yPosition += 10;
+            if (yPosition > pageHeight - 100) {
+                doc.addPage();
+                yPosition = 20;
+            }
+            
+            doc.setFontSize(16);
+            doc.setTextColor(220, 53, 69);
+            doc.text("ANALYSIS & RECOMMENDATIONS", 20, yPosition);
+            
+            yPosition += 10;
+            doc.setFontSize(10);
+            doc.setTextColor(40, 40, 40);
+            
+            const interpretation = generateDonationInterpretation(stats);
+            const splitText = doc.splitTextToSize(interpretation, pageWidth - 40);
+            doc.text(splitText, 20, yPosition);
+            
+            // Add footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                doc.text("Blood Samaritan - Confidential Report", pageWidth - 20, pageHeight - 10, { align: 'right' });
+            }
+            
+            // Save the PDF
+            doc.save(`Blood_Donation_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+            
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            alert("Error generating report. Please try again.");
+        } finally {
+            // Reset button state
+            generateReportBtn.textContent = '📋 Generate Donation Report';
+            generateReportBtn.disabled = false;
+        }
+    }
+    
+    // Event listeners
+    generateReportBtn.addEventListener('click', generatePDFReport);
+    
+    // Initialize chart on page load if there's data
+    document.addEventListener('DOMContentLoaded', function() {
+        const donations = getDonationData();
+        if (donations.length > 0) {
+            createDonationStatsChart();
+        }
+    });
+</script>
 
 {% endblock content %}
