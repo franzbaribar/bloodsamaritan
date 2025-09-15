@@ -107,7 +107,8 @@ def admin_blood_view(request):
         if bloodForm.is_valid() :        
             bloodgroup=bloodForm.cleaned_data['bloodgroup']
             stock=models.Stock.objects.get(bloodgroup=bloodgroup)
-            stock.unit=bloodForm.cleaned_data['unit']
+            # FIX: Add to existing stock instead of replacing it
+            stock.unit = stock.unit + bloodForm.cleaned_data['unit']
             stock.save()
         return HttpResponseRedirect('admin-blood')
     return render(request,'blood/admin_blood.html',context=dict)
